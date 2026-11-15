@@ -815,13 +815,16 @@
 
   function openViewer(li) {
     var list = (li.querySelector('.open').getAttribute('data-pages') || '').split('|').filter(Boolean);
-    openPages(list, num(li) + '  ' + title(li), li.id);
+    openPages(list, num(li) + '  ' + title(li), li.id, li.querySelector('.open').getAttribute('data-pdf'));
   }
   function openBook() {
     var b = $('pbook-open');
-    openPages((b && b.getAttribute('data-pages') || '').split('|').filter(Boolean), 'Practice Book: all practice sets, module by module', null);
+    openPages((b && b.getAttribute('data-pages') || '').split('|').filter(Boolean), 'Practice Book: all practice sets, module by module', null,
+      b && b.getAttribute('data-pdf'));
   }
-  function openPages(list, heading, id) {
+  function openPages(list, heading, id, pdf) {
+    var dl = $('viewer-dl');
+    if (dl) { dl.hidden = !pdf; if (pdf) { dl.href = pdf; dl.setAttribute('download', pdf.split('/').pop()); } }
     viewerId = id;
     lastFocus = document.activeElement;
     $('viewer-title').textContent = heading;
@@ -855,14 +858,6 @@
       else { el.style.backgroundImage = "url('" + el.getAttribute('data-src') + "')"; el.removeAttribute('data-src'); }
     });
   }
-  // view-only: no context menu, dragging, saving or printing from the viewer
-  pages.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-  pages.addEventListener('dragstart', function (e) { e.preventDefault(); });
-  document.addEventListener('keydown', function (e) {
-    if (viewer.hidden) return;
-    var k = (e.key || '').toLowerCase();
-    if ((e.metaKey || e.ctrlKey) && (k === 's' || k === 'p')) e.preventDefault();
-  });
   function closeViewer() {
     viewerId = null;
     viewer.hidden = true;

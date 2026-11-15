@@ -595,7 +595,6 @@ body.viewing .player .frame { z-index: auto; }
 .sheet-page { width: 100%; max-width: 900px; aspect-ratio: 210 / 297; margin: 0 auto 14px; background: #fff center / contain no-repeat;
   box-shadow: 0 2px 12px rgba(0, 0, 0, .35); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .viewer-pages { -webkit-user-select: none; user-select: none; }
-@media print { .viewer, .sheet-page { display: none !important; } }
 
 /* ---------- top: progress panel + module navigation ---------- */
 .dash { background: linear-gradient(180deg, var(--fog), #fff); border-bottom: 1px solid var(--line); }
@@ -658,3 +657,8 @@ body.viewing .player .frame { z-index: auto; }
   .pbook-art .bit { width: 48px; height: 48px; }
   .pbook .btn { width: 100%; justify-content: center; }
 }
+
+.viewer-tools #viewer-dl[hidden] { display: none; }
+.pbook-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 600px) { .pbook-actions { width: 100%; } .pbook-actions .btn { flex: 1; justify-content: center; } }
+.viewer-tools #viewer-done[hidden] { display: none; }
