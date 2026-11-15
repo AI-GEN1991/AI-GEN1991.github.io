@@ -158,18 +158,46 @@ h1 { margin: 0; font-family: var(--serif); font-weight: 700; font-size: clamp(2r
 
 /* ---------- Like / Subscribe under the player (stay on this page) ---------- */
 .yt-links { display: inline-flex; gap: 8px; flex-wrap: wrap; }
-.yt-links button { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-weight: 600; font-size: .86rem; padding: 6px 13px; border-radius: 999px; cursor: pointer; transition: background .2s, color .2s, border-color .2s; }
-.yt-links svg { width: 14px; height: 14px; }
+.yt-links button { position: relative; display: inline-flex; align-items: center; gap: 7px; font: inherit; font-weight: 600; font-size: .86rem;
+  padding: 6px 14px; border-radius: 999px; cursor: pointer; transition: background .25s ease, color .25s ease, border-color .25s ease, box-shadow .3s ease; }
 .yt-like { color: var(--ink); background: #fff; border: 1px solid var(--line); }
 .yt-like:hover { border-color: #c9c6bf; }
-.yt-like[aria-pressed="true"] { color: #1a5fb4; background: #eef4fc; border-color: #b9cfee; }
+.ic-heart { width: 15px; height: 13px; }
+.ic-heart .h-fill { fill: transparent; transition: fill .2s ease; }
+.ic-heart .h-line { fill: currentColor; }
+.yt-like[aria-pressed="true"] { color: #c23a33; background: #fff1f0; border-color: #f2c3be; box-shadow: 0 0 0 4px rgba(232, 69, 44, .10); }
+.yt-like[aria-pressed="true"] .h-fill { fill: #e8452c; }
+.yt-links .n { font-variant-numeric: tabular-nums; padding-left: 7px; border-left: 1px solid rgba(127, 127, 127, .35); }
+.yt-links .n:empty { display: none; }
 .yt-sub { color: #fff; background: #cc0000; border: 1px solid #cc0000; }
 .yt-sub:hover { background: #a80000; }
-.yt-sub[aria-pressed="true"] { color: var(--ink); background: #ecebe8; border-color: #ecebe8; }
-.yt-links .n { font-variant-numeric: tabular-nums; padding-left: 7px; margin-left: 1px; border-left: 1px solid currentColor; border-left-color: rgba(127, 127, 127, .35); }
-.yt-links .n:empty { display: none; }
-.yt-links button.pop { animation: pop-btn .45s ease; }
-@keyframes pop-btn { 0% { transform: scale(1); } 35% { transform: scale(1.18); } 70% { transform: scale(.96); } 100% { transform: scale(1); } }
+.ic-tick { width: 0; height: 15px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 24; stroke-dashoffset: 24; transition: width .25s ease; }
+.yt-sub[aria-pressed="true"] { color: #1e7a3c; background: #ecf8f0; border-color: #b7e2c4; box-shadow: 0 0 0 4px rgba(52, 168, 83, .12); }
+.yt-sub[aria-pressed="true"] .ic-tick { width: 15px; stroke-dashoffset: 0; transition: width .25s ease, stroke-dashoffset .45s .15s cubic-bezier(.6, 0, .3, 1); }
+.yt-links button.pop { animation: pop-btn .5s cubic-bezier(.3, 1.6, .5, 1); }
+.yt-links button.pop::after { content: ""; position: absolute; inset: -2px; border-radius: inherit; border: 2px solid currentColor; opacity: 0; animation: ring .6s ease-out; }
+@keyframes pop-btn { 0% { transform: scale(1); } 30% { transform: scale(.9); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@keyframes ring { 0% { opacity: .6; transform: scale(1); } 100% { opacity: 0; transform: scale(1.5); } }
+
+/* pixel particles (positioned by script) */
+.pfx { position: fixed; inset: 0; z-index: 60; pointer-events: none; overflow: hidden; }
+.pfx i { position: absolute; left: 0; top: 0; display: block; will-change: transform, opacity; image-rendering: pixelated; }
+.pfx svg { display: block; }
+
+/* Ember's thank-you visit */
+.thanks { position: fixed; left: 0; top: 0; z-index: 62; pointer-events: none; will-change: transform; }
+.thanks .bit { animation: none; transform-origin: 50% 100%; }
+.thanks.to-left .bit { transform: scaleX(-1); }
+.thanks.land .bit { animation: land .55s cubic-bezier(.3, 1.5, .5, 1); }
+@keyframes land { 0% { transform: scale(1.1, .82); } 35% { transform: scale(.94, 1.1); } 65% { transform: scale(1.03, .97); } 100% { transform: scale(1); } }
+.thanks-say { position: absolute; left: 50%; bottom: 58px; transform: translateX(-50%); width: max-content; max-width: 220px; font-size: .76rem; }
+.thanks-say::after { right: auto; left: calc(50% - 3px); }
+.thanks-say[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .yt-links button.pop, .yt-links button.pop::after, .thanks.land .bit { animation: none; }
+}
 
 /* celebration burst */
 .burst { position: fixed; z-index: 60; width: 0; height: 0; pointer-events: none; }
@@ -187,9 +215,6 @@ h1 { margin: 0; font-family: var(--serif); font-weight: 700; font-size: clamp(2r
   80% { opacity: 1; }
   100% { transform: translate(-50%, -175%); opacity: 0; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .burst .pc { display: none; }
-  .yt-links button.pop { animation: none; }
 }
 .novideo { color: #9a968e; border-color: var(--line); cursor: default; }
 .novideo:hover { background: #fff; border-color: var(--line); }
@@ -519,3 +544,49 @@ body.contact-page { background: var(--fog); }
 .fly-say::after { right: -12px; left: auto; bottom: 8px; box-shadow: -6px -6px 0 0 var(--ink), 0 -6px 0 0 var(--ink), -6px 0 0 0 #fff, 0 6px 0 0 var(--ink); }
 body.viewing .flyer { display: none; }
 @media (prefers-reduced-motion: reduce) { .fly-flap .d-wu { display: none !important; } .fly-flap .d-wd { animation: none !important; } }
+
+/* ---------- policy fixes ---------- */
+/* YouTube terms: nothing may be drawn over the embedded player, so it sits above every effect layer */
+.player .frame { z-index: 66; }
+body.viewing .player .frame { z-index: auto; }
+.thanks-say { left: 56px; bottom: 14px; transform: none; }
+.thanks-say::after { left: -12px; right: auto; bottom: 8px; box-shadow: 6px -6px 0 0 var(--ink), 0 -6px 0 0 var(--ink), 6px 0 0 0 #fff, 0 6px 0 0 var(--ink); }
+/* Subscribe uses the site's colour, not YouTube red, so it is not mistaken for YouTube's button */
+.yt-sub { background: var(--cardinal); border-color: var(--cardinal); }
+.yt-sub:hover { background: var(--cardinal-dark); }
+/* Google sign-in button in Google's light style (white, grey outline, G logo, dark text) */
+.gate-btn { color: #1f1f1f; background: #fff; border: 1px solid #747775; border-radius: 4px; box-shadow: none;
+  font-family: Roboto, "Source Sans 3", Arial, sans-serif; font-weight: 500; font-size: .95rem; padding: 11px 16px; }
+.gate-btn:hover { background: #f8f8f8; box-shadow: 0 1px 3px rgba(60, 64, 67, .3); }
+.gate-btn:active { transform: none; background: #eee; box-shadow: none; }
+.gate-btn .g { background: none; padding: 0; width: 18px; height: 18px; }
+.contact-send { color: #fff; background: var(--cardinal); border-color: var(--cardinal); font-family: var(--sans); font-weight: 700; }
+.contact-send:hover { background: var(--cardinal-dark); }
+.signin { border: 1px solid #747775; box-shadow: none; font-family: Roboto, "Source Sans 3", Arial, sans-serif; font-weight: 500; }
+.privacy h2 { font-size: 1.05rem; margin: 18px 0 4px; }
+.privacy p, .privacy li { color: #3b3a36; line-height: 1.55; }
+.privacy ul { margin: 6px 0 0; padding-left: 20px; }
+.gate-note a { color: var(--muted); }
+
+/* ---------- Ember perched on the video panel ---------- */
+.player { position: relative; }
+.player.has-perch { margin-top: 50px; }
+.perch { position: absolute; right: 16px; bottom: calc(100% - 2px); z-index: 3; display: flex; align-items: flex-end; gap: 8px; }
+.perch .bit { flex: none; }
+.perch .bit.mood-idle { animation: breathe 3.2s ease-in-out infinite; }
+@keyframes breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.03, .97); } }
+.perch-say { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; max-width: min(280px, 60vw); margin-bottom: 12px; font-size: .74rem;
+  animation: say-in .35s cubic-bezier(.2, 1.3, .4, 1); }
+.perch-say[hidden] { display: none; }
+.perch-say::after { right: -12px; left: auto; bottom: 8px; box-shadow: -6px -6px 0 0 var(--ink), 0 -6px 0 0 var(--ink), -6px 0 0 0 #fff, 0 6px 0 0 var(--ink); }
+@keyframes say-in { from { transform: translateY(6px) scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* flyer steps aside while the page is scrolling */
+.flyer { transition: opacity .35s ease; }
+.flyer.tucked { opacity: 0; }
+.flyer.tucked .fly-btn, .flyer.tucked .fly-say { pointer-events: none; }
+
+/* Pip uses the same 48px (2x) size so its pixels stay crisp */
+.bit.pip { transform-origin: 50% 100%; }
+
+@media (prefers-reduced-motion: reduce) { .perch .bit.mood-idle, .perch-say { animation: none; } }

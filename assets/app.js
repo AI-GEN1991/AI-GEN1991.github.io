@@ -71,7 +71,7 @@
       if (!snap.exists()) p.created = fb.f.serverTimestamp();
       fb.f.setDoc(userRef(), p, { merge: true }).catch(function () {});
       ready = true; render();
-      setTimeout(greet, 600);
+      setTimeout(function () { whenIdle(greet); }, 600);
     }).catch(function () {
       ready = true; note = 'Could not load your progress. Check your connection and reload.'; render();
     });
@@ -177,17 +177,49 @@
     gateShown = show;
   }
 
-  /* ================= Bit, the pixel mascot: short pop-up reactions ================= */
-  var buddyTimer = null;
+  /* ================= dragons: Ember (green) and Pip (baby, sky blue) =================
+     Only one dragon is on screen at a time, and none appear while the student is scrolling. */
   var MOODS = ['mood-idle', 'mood-happy', 'mood-fire', 'mood-wow', 'mood-sad'];
+  var lastScroll = 0, idleTimer = null;
+  window.addEventListener('scroll', function () {
+    lastScroll = performance.now();
+    if (flyer) flyer.classList.add('tucked');
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(function () { if (flyer) flyer.classList.remove('tucked'); }, 1600);
+  }, { passive: true });
+  function isIdle() { return performance.now() - lastScroll > 1400; }
+  function whenIdle(fn) { (function wait() { if (isIdle()) fn(); else setTimeout(wait, 400); })(); }
+  function setMood(sp, mood, extra) {
+    MOODS.forEach(function (m) { sp.classList.remove(m); });
+    void sp.getBoundingClientRect();
+    sp.classList.add('mood-' + mood);
+    if (extra) sp.classList.add(extra);
+  }
+  function cheerMood(sp, extra) {             // happy always starts with a little fire
+    setMood(sp, 'fire', extra);
+    clearTimeout(sp._t);
+    sp._t = setTimeout(function () { setMood(sp, 'happy', extra); }, 1300);
+  }
+  function emberArt() { return $('buddy') && $('buddy').querySelector('.bit'); }
+  function pipArt() { var t = $('pip-art'); return t && t.content && t.content.firstElementChild; }
+  function stageClear(keep) {
+    var b = $('buddy');
+    if (keep !== 'buddy' && b && !b.hidden) { clearTimeout(buddyTimer); b.hidden = true; b.classList.remove('in', 'out'); }
+    if (keep !== 'row') clearRowBuddy();
+    if (keep !== 'thanks' && thanks) { thanks.remove(); thanks = null; }
+    if (keep !== 'flyer' && flyer) { cancelAnimationFrame(flyRaf); flyRaf = 0; flyer.remove(); flyer = null; }
+  }
+
+  /* Ember pops up in the corner for short messages (or speaks from the video perch) */
+  var buddyTimer = null;
   function buddy(text, mood) {
+    if (perch) { perchSay(text, mood); return; }
     var box = $('buddy');
     if (!box) return;
+    stageClear('buddy');
     $('buddy-say').textContent = text;
     var bit = box.querySelector('.bit');
-    MOODS.forEach(function (m) { bit.classList.remove(m); });
-    void bit.getBoundingClientRect();
-    bit.classList.add('mood-' + (mood || 'happy'));
+    if (mood === 'happy' || mood === 'fire') cheerMood(bit); else setMood(bit, mood || 'idle');
     box.hidden = false;
     box.classList.remove('out'); void box.offsetWidth; box.classList.add('in');
     clearTimeout(buddyTimer);
@@ -225,16 +257,19 @@
       : modDone ? 'Module complete!'
       : ['Fired up!', 'Boom! Nice work.', 'One more down!', 'Brain +10!'][n % 4];
 
-    clearRowBuddy();
-    flyHideUntil = performance.now() + 7500;
-    setTimeout(render, 7600);
-    var art = $('buddy') && $('buddy').querySelector('.bit');
+    var nextBtn = nx ? '<button type="button" class="row-next" data-next="' + nx.id + '">Next: ' + esc(num(nx)) + ' ' + esc(title(nx)) + ' \u2192</button>' : '';
+    if (perch) { perchSay(line + ' ' + n + '/' + TOTAL, 'happy', 7000, nextBtn); return; }
+    stageClear('row');
+    flyHideUntil = performance.now() + 8000;
+    setTimeout(render, 8100);
+    var art = pipArt();
     if (!art) return;
     var box = document.createElement('div');
     box.className = 'row-buddy';
     box.setAttribute('role', 'status');
     var sprite = art.cloneNode(true);
-    sprite.setAttribute('class', 'bit bit-sm mood-fire');
+    sprite.setAttribute('class', 'bit bit-sm pip');
+    cheerMood(sprite);
     var bubble = document.createElement('div');
     bubble.className = 'px-bubble row-say';
     bubble.innerHTML = '<span>' + esc(line) + ' ' + n + '/' + TOTAL + '</span>' +
@@ -243,10 +278,9 @@
     box.appendChild(sprite);
     li.appendChild(box);
     rowBuddy = box;
-    rowTimers.push(setTimeout(function () { sprite.setAttribute('class', 'bit bit-sm mood-happy'); }, 1500));
-    rowTimers.push(setTimeout(function () { box.classList.add('out'); }, 7000));
-    rowTimers.push(setTimeout(clearRowBuddy, 7400));
-    if (n === TOTAL || modDone) buddy(n === TOTAL ? 'ALL ' + TOTAL + ' DONE! Legend!' : 'Module complete! ' + mod.querySelector('h2').textContent + ' is yours.', 'fire');
+    rowTimers.push(setTimeout(function () { box.classList.add('out'); }, 7400));
+    rowTimers.push(setTimeout(clearRowBuddy, 7800));
+    if (false) buddy(n === TOTAL ? 'ALL ' + TOTAL + ' DONE! Legend!' : 'Module complete! ' + mod.querySelector('h2').textContent + ' is yours.', 'fire');
   }
 
   /* ================= flying Ember: wanders the right side while you are part-way through ================= */
@@ -257,16 +291,18 @@
   function flyerWanted() {
     if (!(!cloud || (user && ready))) return false;
     var n = rows.filter(function (li) { return done[li.id]; }).length;
-    return n > 0 && n < TOTAL && viewer.hidden && !document.body.classList.contains('gated');
+    var b = $('buddy');
+    return n > 0 && n < TOTAL && viewer.hidden && !document.body.classList.contains('gated')
+      && !perch && !rowBuddy && !thanks && (!b || b.hidden);
   }
   function makeFlyer() {
-    var art = $('buddy') && $('buddy').querySelector('.bit');
+    var art = pipArt();
     if (!art) return null;
     var f = document.createElement('div');
     f.className = 'flyer';
-    f.innerHTML = '<div class="px-bubble fly-say" hidden></div><button type="button" class="fly-btn" aria-label="Ember: show my progress"></button>';
+    f.innerHTML = '<div class="px-bubble fly-say" hidden></div><button type="button" class="fly-btn" aria-label="Pip: show my progress"></button>';
     var sprite = art.cloneNode(true);
-    sprite.setAttribute('class', 'bit bit-sm mood-idle fly-flap');
+    sprite.setAttribute('class', 'bit bit-sm pip mood-idle fly-flap');
     f.querySelector('.fly-btn').appendChild(sprite);
     document.body.appendChild(f);
     return f;
@@ -280,18 +316,18 @@
   function pickGoal() {
     var a = flyArea();
     flyGoal = { x: a.minX + Math.random() * (a.maxX - a.minX), y: a.minY + Math.random() * Math.max(10, a.maxY - a.minY) };
-    flyNext = performance.now() + 2600 + Math.random() * 2600;
+    flyNext = performance.now() + 4500 + Math.random() * 3500;
   }
   function flyStep(t) {
     flyRaf = 0;
     if (!flyer) return;
     if (t > flyNext) pickGoal();
-    flyPos.x += (flyGoal.x - flyPos.x) * 0.018;
-    flyPos.y += (flyGoal.y - flyPos.y) * 0.018;
-    var bob = Math.sin(t / 380) * 4;
+    flyPos.x += (flyGoal.x - flyPos.x) * 0.007;
+    flyPos.y += (flyGoal.y - flyPos.y) * 0.007;
+    var bob = Math.sin(t / 650) * 3;
     flyer.style.transform = 'translate(' + flyPos.x.toFixed(1) + 'px,' + (flyPos.y + bob).toFixed(1) + 'px)';
     flyer.classList.toggle('to-left', flyGoal.x < flyPos.x - 4);
-    if (t > flyTipAt) { flySay(TIPS[Math.floor(Math.random() * TIPS.length)], false); flyTipAt = t + 28000 + Math.random() * 15000; }
+    if (t > flyTipAt && isIdle()) { flySay(TIPS[Math.floor(Math.random() * TIPS.length)], false); flyTipAt = t + 28000 + Math.random() * 15000; }
     flyRaf = requestAnimationFrame(flyStep);
   }
   var sayTimer = null;
@@ -323,8 +359,8 @@
   function poke() {
     var n = rows.filter(function (li) { return done[li.id]; }).length;
     var sp = flyer.querySelector('.bit');
-    sp.setAttribute('class', 'bit bit-sm mood-wow fly-flap');
-    setTimeout(function () { if (flyer) sp.setAttribute('class', 'bit bit-sm mood-idle fly-flap'); }, 900);
+    cheerMood(sp, 'fly-flap');
+    sp.classList.add('pip');
     flySay(n + ' of ' + TOTAL + ' done. Keep going!', true);
   }
   window.addEventListener('resize', function () { if (flyer) pickGoal(); });
@@ -400,8 +436,73 @@
   }
   q.addEventListener('input', render);
 
+  /* ================= Ember perches on the video panel while a lecture is open ================= */
+  var perch = null;
+  function makePerch(li, p) {
+    removePerch();
+    var art = emberArt();
+    if (!art) return;
+    stageClear(null);
+    var el = document.createElement('div');
+    el.className = 'perch';
+    el.innerHTML = '<div class="px-bubble perch-say" role="status" hidden></div>';
+    var sp = art.cloneNode(true);
+    sp.setAttribute('class', 'bit bit-sm mood-idle');
+    el.appendChild(sp);
+    p.classList.add('has-perch');
+    p.appendChild(el);
+    perch = { el: el, li: li, sp: sp, say: el.querySelector('.perch-say'), timer: null, state: -1 };
+    perchSay("I'll wait here. Enjoy the lecture!", 'idle', 3200);
+  }
+  function removePerch() {
+    if (!perch) return;
+    clearTimeout(perch.timer); clearTimeout(perch.sp._t);
+    perch.el.remove(); perch = null;
+    setTimeout(render, 50);
+  }
+  function perchSay(text, mood, ms, extra) {
+    if (!perch) return;
+    perch.say.innerHTML = '<span>' + esc(text) + '</span>' + (extra || '');
+    perch.say.hidden = false;
+    if (mood === 'happy' || mood === 'fire') cheerMood(perch.sp); else setMood(perch.sp, mood || 'idle');
+    clearTimeout(perch.timer);
+    perch.timer = setTimeout(function () {
+      if (!perch) return;
+      perch.say.hidden = true;
+      setMood(perch.sp, 'idle');
+    }, ms || 3200);
+  }
+  function lectureEnded() {
+    var li = perch.li;
+    if (done[li.id]) perchSay('Lecture done! You already finished this one.', 'happy', 8000);
+    else perchSay('Lecture done! Now try the worksheet.', 'happy', 14000,
+      '<button type="button" class="row-next" data-open="' + li.id + '">Open worksheet \u2192</button>');
+  }
+  // The YouTube embed reports its state by postMessage once we say we are listening (enablejsapi=1).
+  window.addEventListener('message', function (e) {
+    if (!/^https:\/\/www\.youtube(-nocookie)?\.com$/.test(e.origin) || !perch) return;
+    var d;
+    try { d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch (x) { return; }
+    if (!d) return;
+    var st = d.event === 'onStateChange' ? d.info
+      : (d.event === 'infoDelivery' && d.info && typeof d.info.playerState === 'number' ? d.info.playerState : null);
+    if (st === null || st === perch.state) return;
+    var fr = perch.li.querySelector('iframe');
+    if (!fr || fr.contentWindow !== e.source) return;
+    perch.state = st;
+    if (st === 1) { perch.say.hidden = true; setMood(perch.sp, 'idle'); }
+    if (st === 0) lectureEnded();
+  });
+  function listenTo(iframe) {
+    var tries = 0, iv = setInterval(function () {
+      try { iframe.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 'ws', channel: 'widget' }), 'https://www.youtube-nocookie.com'); } catch (e) {}
+      if (++tries > 10 || !iframe.isConnected) clearInterval(iv);
+    }, 700);
+  }
+
   /* ================= inline video player ================= */
   function closePlayer(li) {
+    if (perch && perch.li === li) removePerch();
     var p = li.querySelector('.player');
     if (p) p.remove();
     var b = li.querySelector('.watch');
@@ -411,9 +512,12 @@
     var p = li.querySelector('.player'), v = vids[i];
     // No autoplay: YouTube counts a view when the viewer presses play themselves.
     p.querySelector('.frame').innerHTML =
-      '<iframe src="https://www.youtube-nocookie.com/embed/' + v.id + '?rel=0" title="' + esc(v.title) + '" ' +
+      '<iframe src="https://www.youtube-nocookie.com/embed/' + v.id + '?rel=0&enablejsapi=1&origin=' + encodeURIComponent(location.origin) + '" title="' + esc(v.title) + '" ' +
       'loading="lazy" allowfullscreen allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" ' +
       'referrerpolicy="strict-origin-when-cross-origin"></iframe>';
+    var fr = p.querySelector('iframe');
+    fr.addEventListener('load', function () { listenTo(fr); });
+    if (perch) perch.state = -1;
     p.querySelector('.player-foot strong').textContent = v.title;
     p.querySelector('.yt-like').setAttribute('data-vid', v.id);
     loadTotals(['v_' + v.id, 'channel']);
@@ -438,9 +542,11 @@
       '<div class="player-foot"><strong></strong>' +
         '<span class="yt-links">' +
           '<button type="button" class="yt-like" aria-pressed="false">' +
-            '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 21h4V9H2v12zm20-11a2 2 0 0 0-2-2h-6.3l1-4.6v-.3c0-.4-.2-.8-.4-1.1L13.2 1 6.6 7.6C6.2 8 6 8.5 6 9v10a2 2 0 0 0 2 2h9c.8 0 1.5-.5 1.8-1.2l3-7.1c.1-.2.2-.5.2-.7v-2z"/></svg>' +
+            '<svg class="ic-heart" viewBox="0 0 7 6" shape-rendering="crispEdges" aria-hidden="true"><path class="h-fill" d="M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z"/><path class="h-line" d="M1 0h2v1H1zM4 0h2v1H4zM0 1h1v2H0zM6 1h1v2H6zM3 1h1v1H3zM1 3h1v1H1zM5 3h1v1H5zM2 4h1v1H2zM4 4h1v1H4zM3 5h1v1H3z"/></svg>' +
             '<span class="t">Like</span><span class="n"></span></button>' +
-          '<button type="button" class="yt-sub" aria-pressed="false"><span class="t">Subscribe</span><span class="n"></span></button>' +
+          '<button type="button" class="yt-sub" aria-pressed="false" title="Get updates on this site (separate from YouTube)">' +
+            '<svg class="ic-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12.5l5 5L19.5 7"/></svg>' +
+            '<span class="t">Subscribe</span></button>' +
         '</span></div>';
     li.appendChild(p);
     p.addEventListener('click', function (e) {
@@ -449,6 +555,7 @@
     });
     btn.setAttribute('aria-expanded', 'true');
     show(li, vids, 0);
+    makePerch(li, p);
     track('video-' + li.id, 'Video: ' + title(li));
   }
 
@@ -467,8 +574,7 @@
     lk.querySelector('.t').textContent = on ? 'Liked' : 'Like';
     lk.querySelector('.n').textContent = totals[k] > 0 ? String(totals[k]) : '';
     sb.setAttribute('aria-pressed', sub ? 'true' : 'false');
-    sb.querySelector('.t').textContent = sub ? 'Subscribed ✓' : 'Subscribe';
-    sb.querySelector('.n').textContent = totals.channel > 0 ? String(totals.channel) : '';
+    sb.querySelector('.t').textContent = sub ? 'Subscribed' : 'Subscribe';
   }
   function repaintPlayers() { [].forEach.call(document.querySelectorAll('.player'), paintReactions); }
   function loadTotals(keys) {
@@ -483,23 +589,124 @@
       }).catch(function () { asked[k] = false; });
     });
   }
-  function celebrate(btn, icons, message) {
-    var r = btn.getBoundingClientRect();
+  /* ---- pixel particles with simple physics: launch velocity, gravity, air drag, spin ---- */
+  var SPR = {
+    heart: ['.XX.XX.', 'XXXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'],
+    spark: ['..X..', '..X..', 'XXWXX', '..X..', '..X..'],
+    dot:   ['XX', 'XX'],
+    star:  ['.X.', 'XWX', '.X.']
+  };
+  function sprite(rows, color) {
+    var h = rows.length, w = rows[0].length, r = '';
+    rows.forEach(function (line, y) {
+      for (var x = 0; x < w; x++) {
+        var c = line[x];
+        if (c !== '.') r += '<rect x="' + x + '" y="' + y + '" width="1" height="1" fill="' + (c === 'W' ? '#fff' : color) + '"/>';
+      }
+    });
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="' + (w * 3) + '" height="' + (h * 3) + '" shape-rendering="crispEdges">' + r + '</svg>';
+  }
+  var PALETTE = {
+    like: [['heart', '#e8452c'], ['heart', '#ff6b81'], ['heart', '#c23a33'], ['spark', '#ffd23f'], ['star', '#ffffff'], ['dot', '#ff9f1c']],
+    sub:  [['spark', '#4285F4'], ['spark', '#EA4335'], ['spark', '#FBBC05'], ['spark', '#34A853'], ['star', '#ffd23f'], ['dot', '#4285F4']]
+  };
+  var calmFx = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  function burst(btn, kind) {
+    var r = btn.getBoundingClientRect(), ox = r.left + r.width / 2, oy = r.top + r.height / 2;
     var layer = document.createElement('div');
-    layer.className = 'burst';
-    layer.style.left = (r.left + r.width / 2) + 'px';
-    layer.style.top = r.top + 'px';
-    var html = '<span class="bubble">' + esc(message) + '</span>';
-    for (var i = 0; i < 16; i++) {
-      var dx = Math.round((Math.random() - .5) * 180), dy = -Math.round(70 + Math.random() * 120);
-      html += '<span class="pc" style="--dx:' + dx + 'px;--dy:' + dy + 'px;--rot:' + Math.round((Math.random() - .5) * 90) +
-        'deg;--d:' + Math.round(Math.random() * 180) + 'ms;--s:' + (0.8 + Math.random() * 0.7).toFixed(2) + '">' +
-        icons[i % icons.length] + '</span>';
-    }
-    layer.innerHTML = html;
+    layer.className = 'pfx';
     document.body.appendChild(layer);
+    var parts = [], N = calmFx ? 0 : 14, pal = PALETTE[kind];
+    for (var i = 0; i < N; i++) {
+      var pick = pal[i % pal.length], el = document.createElement('i');
+      el.innerHTML = sprite(SPR[pick[0]], pick[1]);
+      layer.appendChild(el);
+      var ang = -Math.PI / 2 + (Math.random() - .5) * 1.9, sp = 3.4 + Math.random() * 3.4;
+      parts.push({ el: el, x: ox, y: oy, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, rot: 0,
+                   vr: (Math.random() - .5) * 7, life: 0, max: 85 + Math.random() * 40, s: .6 + Math.random() * .45 });
+    }
     btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop');
-    setTimeout(function () { layer.remove(); }, 1800);
+    var last = performance.now();
+    function tick(now) {
+      var dt = Math.min(2.5, (now - last) / 16.67); last = now;
+      var alive = 0;
+      parts.forEach(function (p) {
+        if (p.life > p.max) { p.el.style.opacity = 0; return; }
+        alive++;
+        p.vy += 0.13 * dt;                  // gentle gravity
+        p.vx *= Math.pow(0.985, dt);        // air drag
+        p.vy *= Math.pow(0.99, dt);
+        p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; p.life += dt;
+        var k = p.life / p.max, fade = k < .7 ? 1 : 1 - (k - .7) / .3;
+        p.el.style.transform = 'translate(' + p.x.toFixed(1) + 'px,' + p.y.toFixed(1) + 'px) translate(-50%,-50%) rotate(' +
+          p.rot.toFixed(0) + 'deg) scale(' + p.s.toFixed(2) + ')';
+        p.el.style.opacity = fade.toFixed(2);
+      });
+      if (alive) requestAnimationFrame(tick); else layer.remove();
+    }
+    if (N) requestAnimationFrame(tick); else setTimeout(function () { layer.remove(); }, 50);
+  }
+
+  /* ---- Ember flies in from the corner on an arc, lands by the button, thanks you, flies off ---- */
+  var thanks = null;
+  function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function bez(a, c, b, t) { var u = 1 - t; return u * u * a + 2 * u * t * c + t * t * b; }
+  function emberThanks(btn, text) {
+    var art = $('buddy') && $('buddy').querySelector('.bit');
+    if (!art) return;
+    if (thanks) { thanks.remove(); thanks = null; }
+    flyHideUntil = performance.now() + 4200; render();
+    setTimeout(render, 4300);
+    var box = document.createElement('div');
+    box.className = 'thanks';
+    box.setAttribute('role', 'status');
+    var sp = art.cloneNode(true);
+    sp.setAttribute('class', 'bit bit-sm mood-happy fly-flap');
+    box.innerHTML = '<div class="px-bubble thanks-say" hidden></div>';
+    box.appendChild(sp);
+    document.body.appendChild(box);
+    thanks = box;
+    var r = btn.getBoundingClientRect();
+    var land = { x: Math.max(8, Math.min(window.innerWidth - 60, r.left + r.width / 2 - 24)), y: r.bottom + 6 };
+    var from = { x: window.innerWidth - 60, y: window.innerHeight - 70 };
+    var ctrl = { x: (from.x + land.x) / 2 + 60, y: Math.min(from.y, land.y) - 170 };
+    function place(x, y, tilt) {
+      box.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) rotate(' + tilt.toFixed(1) + 'deg)';
+    }
+    function fly(a, c, b, ms, done) {
+      var t0 = performance.now(), px = a.x;
+      (function step(now) {
+        if (thanks !== box) return;
+        var t = Math.min(1, (now - t0) / ms), e = ease(t);
+        var x = bez(a.x, c.x, b.x, e), y = bez(a.y, c.y, b.y, e);
+        var tilt = Math.max(-18, Math.min(18, (x - px) * 2.2));   // lean into the motion
+        box.classList.toggle('to-left', x < px - .3);
+        px = x;
+        place(x, y, t < 1 ? tilt : 0);
+        if (t < 1) requestAnimationFrame(step); else done();
+      })(t0);
+    }
+    var say = box.querySelector('.thanks-say');
+    if (calmFx) {
+      place(land.x, land.y, 0); say.textContent = text; say.hidden = false;
+      setTimeout(function () { if (thanks === box) { box.remove(); thanks = null; } }, 2200);
+      return;
+    }
+    place(from.x, from.y, 0);
+    fly(from, ctrl, land, 1600, function () {
+      box.classList.add('land');                       // squash and stretch on touchdown
+      cheerMood(sp);
+      say.textContent = text; say.hidden = false;
+      setTimeout(function () {
+        if (thanks !== box) return;
+        say.hidden = true; box.classList.remove('land');
+        sp.setAttribute('class', 'bit bit-sm mood-happy fly-flap');
+        var out = { x: window.innerWidth + 40, y: window.innerHeight + 40 };
+        fly(land, { x: land.x + 160, y: land.y + 40 }, out, 1500, function () {
+          if (thanks === box) { box.remove(); thanks = null; }
+        });
+      }, 1900);
+    });
   }
   function react(btn) {
     if (cloud && !user) { signIn(); return; }          // a like counts once per Google account
@@ -523,9 +730,11 @@
     } else {
       lsSet('bs-reacts', reacts);
     }
-    if (on) buddy(isLike ? 'Thanks for the like!' : 'Welcome to the crew!', isLike ? 'happy' : 'fire');
-    if (on && isLike) celebrate(btn, ['❤️', '👍', '✨', '🎈', '🎉'], 'Thanks for the like!');
-    if (on && !isLike) celebrate(btn, ['🎈', '🎉', '✨', '🔔', '⭐'], 'Welcome aboard!');
+    if (on) {
+      burst(btn, isLike ? 'like' : 'sub');
+      if (perch) perchSay(isLike ? 'Thank you!' : 'Welcome to the crew!', 'happy', 2800);
+      else emberThanks(btn, isLike ? 'Thank you!' : 'Welcome to the crew!');
+    }
     repaintPlayers();
   }
 
@@ -547,6 +756,8 @@
       return;
     }
     if (t.closest('.fly-btn')) { poke(); return; }
+    var ow = t.closest('[data-open]');
+    if (ow) { location.hash = 'view-' + ow.getAttribute('data-open'); if (perch) perch.say.hidden = true; return; }
     var y = t.closest('.yt-like, .yt-sub');
     if (y) { react(y); return; }
     var d = t.closest('.ws .done');
