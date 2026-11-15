@@ -52,15 +52,18 @@
 
   function onUser(u) {
     user = u; done = {}; note = '';
-    if (!u) { ready = true; render(); return; }
+    if (!u) { reacts = {}; repaintPlayers(); ready = true; render(); return; }
     ready = false; render();
     fb.f.getDoc(userRef()).then(function (snap) {
       var data = snap.exists() ? snap.data() : {};
       Object.keys(data.done || {}).forEach(function (k) { done[k] = true; });
+      reacts = {}; Object.keys(data.reacts || {}).forEach(function (k) { reacts[k] = true; });
+      repaintPlayers();
       var p = { name: u.displayName || '', email: u.email || '', photo: u.photoURL || '', lastSeen: fb.f.serverTimestamp() };
       if (!snap.exists()) p.created = fb.f.serverTimestamp();
       fb.f.setDoc(userRef(), p, { merge: true }).catch(function () {});
       ready = true; render();
+      setTimeout(greet, 600);
     }).catch(function () {
       ready = true; note = 'Could not load your progress. Check your connection and reload.'; render();
     });
@@ -88,12 +91,14 @@
       d.done[id] = on ? fb.f.serverTimestamp() : fb.f.deleteField();
       fb.f.setDoc(userRef(), d, { merge: true }).catch(function () {
         note = 'Could not save just now. Check your connection and try again.'; render();
+        buddy('Oh no, that did not save. Try again?', 'sad');
       });
     } else if (!cloud) {
       lsSet('bs-done', done);
     }
     if (on) track('done-' + id, 'Done: ' + id);
     render();
+    if (on) cheerDone(id);
   }
   function toggleDone(id) {
     if (cloud && !user) { signIn(); return; }      // the checklist belongs to a Google account
@@ -138,6 +143,60 @@
     if (!m) return;
     m.hidden = !m.hidden;
     b.setAttribute('aria-expanded', m.hidden ? 'false' : 'true');
+  }
+
+  /* ================= sign-in gate: students sign in before they start ================= */
+  var gateShown = null;
+  function renderGate() {
+    var gate = $('gate');
+    if (!gate) return;
+    var show = cloud && !user;
+    document.body.classList.toggle('gated', show);
+    gate.hidden = !show;
+    var b = $('gate-signin');
+    b.disabled = !fb;
+    b.querySelector('span').textContent = fb ? 'Sign in with Google' : 'Loading…';
+    if (show && fb && gateShown !== true) { b.focus(); }
+    gateShown = show;
+  }
+
+  /* ================= Bit, the pixel mascot: short pop-up reactions ================= */
+  var buddyTimer = null;
+  var MOODS = ['mood-idle', 'mood-happy', 'mood-fire', 'mood-wow', 'mood-sad'];
+  function buddy(text, mood) {
+    var box = $('buddy');
+    if (!box) return;
+    $('buddy-say').textContent = text;
+    var bit = box.querySelector('.bit');
+    MOODS.forEach(function (m) { bit.classList.remove(m); });
+    void bit.getBoundingClientRect();
+    bit.classList.add('mood-' + (mood || 'happy'));
+    box.hidden = false;
+    box.classList.remove('out'); void box.offsetWidth; box.classList.add('in');
+    clearTimeout(buddyTimer);
+    buddyTimer = setTimeout(function () {
+      box.classList.remove('in'); box.classList.add('out');
+      buddyTimer = setTimeout(function () { box.hidden = true; box.classList.remove('out'); }, 300);
+    }, mood === 'fire' ? 3800 : 3200);
+  }
+  function firstName() { return user && user.displayName ? user.displayName.split(' ')[0] : ''; }
+  function nextUp() {
+    for (var i = 0; i < rows.length; i++) if (!done[rows[i].id]) return rows[i];
+    return null;
+  }
+  function greet() {
+    var n = Object.keys(done).filter(function (k) { return $(k); }).length, nx = nextUp(), who = firstName();
+    if (!n) buddy('Welcome' + (who ? ', ' + who : '') + '! Start with ' + (nx ? num(nx) + ' ' + title(nx) : 'any worksheet') + '.', 'wow');
+    else if (!nx) buddy('All ' + TOTAL + ' done' + (who ? ', ' + who : '') + '. Legend!', 'fire');
+    else buddy('Welcome back' + (who ? ', ' + who : '') + '! ' + n + ' done, ' + (TOTAL - n) + ' to go.', 'happy');
+  }
+  function cheerDone(id) {
+    var n = rows.filter(function (li) { return done[li.id]; }).length;
+    var li = $(id), mod = li && li.closest('.module');
+    var modDone = mod && [].every.call(mod.querySelectorAll('.ws:not(.soon)'), function (x) { return done[x.id]; });
+    if (n === TOTAL) buddy('ALL ' + TOTAL + ' DONE! You are on fire!', 'fire');
+    else if (modDone) buddy('Module complete! ' + mod.querySelector('h2').textContent + ' is yours.', 'fire');
+    else buddy(['Fired up!', 'Boom! Nice work.', 'One more down!', 'Brain +10!'][n % 4] + ' ' + n + ' of ' + TOTAL + ' done.', 'fire');
   }
 
   /* ================= rendering ================= */
@@ -199,6 +258,7 @@
     });
 
     renderAuth();
+    renderGate();
 
     var vd = $('viewer-done');
     if (vd && viewerId) {
@@ -225,6 +285,7 @@
       'referrerpolicy="strict-origin-when-cross-origin"></iframe>';
     p.querySelector('.player-foot strong').textContent = v.title;
     p.querySelector('.yt-like').setAttribute('data-vid', v.id);
+    loadTotals(['v_' + v.id, 'channel']);
     paintReactions(p);
     [].forEach.call(p.querySelectorAll('.player-tabs button'), function (t, k) {
       t.setAttribute('aria-selected', k === i ? 'true' : 'false');
@@ -247,8 +308,8 @@
         '<span class="yt-links">' +
           '<button type="button" class="yt-like" aria-pressed="false">' +
             '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 21h4V9H2v12zm20-11a2 2 0 0 0-2-2h-6.3l1-4.6v-.3c0-.4-.2-.8-.4-1.1L13.2 1 6.6 7.6C6.2 8 6 8.5 6 9v10a2 2 0 0 0 2 2h9c.8 0 1.5-.5 1.8-1.2l3-7.1c.1-.2.2-.5.2-.7v-2z"/></svg>' +
-            '<span class="t">Like</span></button>' +
-          '<button type="button" class="yt-sub" aria-pressed="false"><span class="t">Subscribe</span></button>' +
+            '<span class="t">Like</span><span class="n"></span></button>' +
+          '<button type="button" class="yt-sub" aria-pressed="false"><span class="t">Subscribe</span><span class="n"></span></button>' +
         '</span></div>';
     li.appendChild(p);
     p.addEventListener('click', function (e) {
@@ -260,16 +321,36 @@
     track('video-' + li.id, 'Video: ' + title(li));
   }
 
-  /* ================= Like / Subscribe: on-page reactions with a little celebration ================= */
-  var ytLiked = lsGet('bs-yt-liked', {});    // video id -> true
-  var ytSub = lsGet('bs-yt-sub', false);
+  /* ================= Like / Subscribe: on-page reactions with a little celebration =================
+     Signed-in students: each like / subscribe is saved on their account (users/{uid}.reacts) and
+     added to a public total (stats/v_<videoId>.likes, stats/channel.subs) in one batch, so the
+     Firestore rules can check nobody counts twice. Without Firebase they stay in this browser. */
+  var reacts = cloud ? {} : lsGet('bs-reacts', {});   // 'v_<videoId>' or 'channel' -> true
+  var totals = {};                                    // same keys -> public count
+  var asked = {};                                     // stats docs already fetched
+  function likeKey(btn) { return 'v_' + btn.getAttribute('data-vid'); }
   function paintReactions(p) {
     var lk = p.querySelector('.yt-like'), sb = p.querySelector('.yt-sub');
-    var on = !!ytLiked[lk.getAttribute('data-vid')];
+    var k = likeKey(lk), on = !!reacts[k], sub = !!reacts.channel;
     lk.setAttribute('aria-pressed', on ? 'true' : 'false');
     lk.querySelector('.t').textContent = on ? 'Liked' : 'Like';
-    sb.setAttribute('aria-pressed', ytSub ? 'true' : 'false');
-    sb.querySelector('.t').textContent = ytSub ? 'Subscribed ✓' : 'Subscribe';
+    lk.querySelector('.n').textContent = totals[k] > 0 ? String(totals[k]) : '';
+    sb.setAttribute('aria-pressed', sub ? 'true' : 'false');
+    sb.querySelector('.t').textContent = sub ? 'Subscribed ✓' : 'Subscribe';
+    sb.querySelector('.n').textContent = totals.channel > 0 ? String(totals.channel) : '';
+  }
+  function repaintPlayers() { [].forEach.call(document.querySelectorAll('.player'), paintReactions); }
+  function loadTotals(keys) {
+    if (!fb) return;
+    keys.forEach(function (k) {
+      if (asked[k]) return;
+      asked[k] = true;
+      fb.f.getDoc(fb.f.doc(fb.db, 'stats', k)).then(function (snap) {
+        var v = snap.exists() ? snap.data() : {};
+        totals[k] = Math.max(0, (k === 'channel' ? v.subs : v.likes) || 0);
+        repaintPlayers();
+      }).catch(function () { asked[k] = false; });
+    });
   }
   function celebrate(btn, icons, message) {
     var r = btn.getBoundingClientRect();
@@ -290,19 +371,31 @@
     setTimeout(function () { layer.remove(); }, 1800);
   }
   function react(btn) {
-    var p = btn.closest('.player');
-    if (btn.classList.contains('yt-like')) {
-      var id = btn.getAttribute('data-vid'), on = !ytLiked[id];
-      if (on) ytLiked[id] = true; else delete ytLiked[id];
-      lsSet('bs-yt-liked', ytLiked);
-      if (on) { celebrate(btn, ['❤️', '👍', '✨', '🎈', '🎉'], 'Thanks for the like!'); track('like-' + id, 'Like: ' + id); }
+    if (cloud && !user) { signIn(); return; }          // a like counts once per Google account
+    if (!ready) return;
+    var isLike = btn.classList.contains('yt-like');
+    var k = isLike ? likeKey(btn) : 'channel', on = !reacts[k];
+    if (on) reacts[k] = true; else delete reacts[k];
+    totals[k] = Math.max(0, (totals[k] || 0) + (on ? 1 : -1));
+    if (cloud && fb) {
+      var batch = fb.f.writeBatch(fb.db), mine = { reacts: {} }, stat = {};
+      mine.reacts[k] = on ? fb.f.serverTimestamp() : fb.f.deleteField();
+      stat[isLike ? 'likes' : 'subs'] = fb.f.increment(on ? 1 : -1);
+      batch.set(userRef(), mine, { merge: true });
+      batch.set(fb.f.doc(fb.db, 'stats', k), stat, { merge: true });
+      batch.commit().catch(function () {                // undo on screen if it was not saved
+        if (on) delete reacts[k]; else reacts[k] = true;
+        totals[k] = Math.max(0, (totals[k] || 0) + (on ? -1 : 1));
+        note = 'Could not save that just now. Please try again.';
+        render(); repaintPlayers();
+      });
     } else {
-      ytSub = !ytSub;
-      lsSet('bs-yt-sub', ytSub);
-      if (ytSub) { celebrate(btn, ['🎈', '🎉', '✨', '🔔', '⭐'], 'Welcome aboard!'); track('subscribe', 'Subscribe'); }
+      lsSet('bs-reacts', reacts);
     }
-    [].forEach.call(document.querySelectorAll('.player'), paintReactions);
-    if (p) paintReactions(p);
+    if (on) buddy(isLike ? 'Thanks for the like!' : 'Welcome to the crew!', isLike ? 'happy' : 'fire');
+    if (on && isLike) celebrate(btn, ['❤️', '👍', '✨', '🎈', '🎉'], 'Thanks for the like!');
+    if (on && !isLike) celebrate(btn, ['🎈', '🎉', '✨', '🔔', '⭐'], 'Welcome aboard!');
+    repaintPlayers();
   }
 
   /* ================= clicks ================= */
@@ -338,7 +431,7 @@
       setTimeout(function () { target.classList.remove('flash'); }, 1600);
       return;
     }
-    if (t.closest('#signin') || t.closest('#signin2')) { signIn(); return; }
+    if (t.closest('#signin') || t.closest('#signin2') || t.closest('#gate-signin')) { signIn(); return; }
     if (t.closest('#me')) { toggleMenu(); return; }
     if (t.closest('#signout')) { signOut(); return; }
     if (t.closest('#viewer-done') && viewerId) { toggleDone(viewerId); return; }
