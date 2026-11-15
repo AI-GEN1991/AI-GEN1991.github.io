@@ -39,7 +39,7 @@
     b.disabled = state === 'loading';
     b.querySelector('span').textContent = state === 'loading' ? 'Loading…' : 'Sign in with Google';
     $('gate-out').hidden = state !== 'denied';
-    if (text) $('gate-lede').textContent = text;
+    $('gate-lede').textContent = text || '';
     var dragon = $('gate').querySelector('.bit');
     dragon.classList.remove('mood-idle', 'mood-sad');
     dragon.classList.add(state === 'denied' ? 'mood-sad' : 'mood-idle');
@@ -56,7 +56,7 @@
         fb.a.onAuthStateChanged(fb.auth, function (u) {
           user = u;
           renderAuth();
-          if (!u) { gate('out', 'See who has started, what they finished and how the lectures are landing.'); return; }
+          if (!u) { gate('out', ''); return; }
           load();
         });
       })

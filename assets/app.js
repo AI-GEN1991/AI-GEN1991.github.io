@@ -146,7 +146,7 @@
   }
 
   /* ================= sign-in gate: students sign in before they start ================= */
-  var gateShown = null;
+  var gateShown = null, puffTimer = null;
   function renderGate() {
     var gate = $('gate');
     if (!gate) return;
@@ -157,6 +157,15 @@
     b.disabled = !fb;
     b.querySelector('span').textContent = fb ? 'Sign in with Google' : 'Loading…';
     if (show && fb && gateShown !== true) { b.focus(); }
+    if (show && !puffTimer && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+      puffTimer = setInterval(function () {
+        var d = gate.querySelector('.bit');
+        if (gate.hidden || !d) return;
+        d.classList.remove('mood-idle'); d.classList.add('mood-fire');
+        setTimeout(function () { d.classList.remove('mood-fire'); d.classList.add('mood-idle'); }, 1500);
+      }, 6500);
+    }
+    if (!show && puffTimer) { clearInterval(puffTimer); puffTimer = null; }
     gateShown = show;
   }
 
