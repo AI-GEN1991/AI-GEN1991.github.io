@@ -5,7 +5,15 @@
 (function () {
   'use strict';
 
-  var SITE = window.SITE || {};
+  // Refuse to run inside another site's frame (clickjacking).
+  if (window.top !== window.self) {
+    try { window.top.location = window.location.href; } catch (e) { document.documentElement.style.display = 'none'; }
+    return;
+  }
+  function readConfig() {
+    try { return JSON.parse(document.getElementById('site-config').textContent); } catch (e) { return {}; }
+  }
+  var SITE = readConfig();
   var CFG = SITE.firebase && SITE.firebase.apiKey ? SITE.firebase : null;
   var SDK = SITE.firebaseSdk || 'https://www.gstatic.com/firebasejs/10.12.2/';
   var CHANNEL = SITE.channel || 'https://www.youtube.com/';
@@ -98,7 +106,7 @@
     }
     if (on) track('done-' + id, 'Done: ' + id);
     render();
-    if (on) cheerDone(id);
+    if (on) cheerDone(id); else if (rowBuddy && rowBuddy.parentNode && rowBuddy.parentNode.id === id) clearRowBuddy();
   }
   function toggleDone(id) {
     if (cloud && !user) { signIn(); return; }      // the checklist belongs to a Google account
@@ -199,14 +207,127 @@
     else if (!nx) buddy('All ' + TOTAL + ' done' + (who ? ', ' + who : '') + '. Legend!', 'fire');
     else buddy('Welcome back' + (who ? ', ' + who : '') + '! ' + n + ' done, ' + (TOTAL - n) + ' to go.', 'happy');
   }
-  function cheerDone(id) {
-    var n = rows.filter(function (li) { return done[li.id]; }).length;
-    var li = $(id), mod = li && li.closest('.module');
-    var modDone = mod && [].every.call(mod.querySelectorAll('.ws:not(.soon)'), function (x) { return done[x.id]; });
-    if (n === TOTAL) buddy('ALL ' + TOTAL + ' DONE! You are on fire!', 'fire');
-    else if (modDone) buddy('Module complete! ' + mod.querySelector('h2').textContent + ' is yours.', 'fire');
-    else buddy(['Fired up!', 'Boom! Nice work.', 'One more down!', 'Brain +10!'][n % 4] + ' ' + n + ' of ' + TOTAL + ' done.', 'fire');
+  /* A small Ember pops up on the row that was just ticked: fire, then happy, then
+     points to the next worksheet with a button that jumps there. */
+  var rowBuddy = null, rowTimers = [];
+  function clearRowBuddy() {
+    rowTimers.forEach(clearTimeout); rowTimers = [];
+    if (rowBuddy) { rowBuddy.remove(); rowBuddy = null; }
   }
+  function cheerDone(id) {
+    var li = $(id);
+    if (!li) return;
+    var n = rows.filter(function (x) { return done[x.id]; }).length;
+    var mod = li.closest('.module');
+    var modDone = mod && [].every.call(mod.querySelectorAll('.ws:not(.soon)'), function (x) { return done[x.id]; });
+    var nx = nextUp();
+    var line = n === TOTAL ? 'All ' + TOTAL + ' done. You are on fire!'
+      : modDone ? 'Module complete!'
+      : ['Fired up!', 'Boom! Nice work.', 'One more down!', 'Brain +10!'][n % 4];
+
+    clearRowBuddy();
+    flyHideUntil = performance.now() + 7500;
+    setTimeout(render, 7600);
+    var art = $('buddy') && $('buddy').querySelector('.bit');
+    if (!art) return;
+    var box = document.createElement('div');
+    box.className = 'row-buddy';
+    box.setAttribute('role', 'status');
+    var sprite = art.cloneNode(true);
+    sprite.setAttribute('class', 'bit bit-sm mood-fire');
+    var bubble = document.createElement('div');
+    bubble.className = 'px-bubble row-say';
+    bubble.innerHTML = '<span>' + esc(line) + ' ' + n + '/' + TOTAL + '</span>' +
+      (nx ? '<button type="button" class="row-next" data-next="' + nx.id + '">Next: ' + esc(num(nx)) + ' ' + esc(title(nx)) + ' →</button>' : '');
+    box.appendChild(bubble);
+    box.appendChild(sprite);
+    li.appendChild(box);
+    rowBuddy = box;
+    rowTimers.push(setTimeout(function () { sprite.setAttribute('class', 'bit bit-sm mood-happy'); }, 1500));
+    rowTimers.push(setTimeout(function () { box.classList.add('out'); }, 7000));
+    rowTimers.push(setTimeout(clearRowBuddy, 7400));
+    if (n === TOTAL || modDone) buddy(n === TOTAL ? 'ALL ' + TOTAL + ' DONE! Legend!' : 'Module complete! ' + mod.querySelector('h2').textContent + ' is yours.', 'fire');
+  }
+
+  /* ================= flying Ember: wanders the right side while you are part-way through ================= */
+  var flyer = null, flyPos = null, flyGoal = null, flyRaf = 0, flyNext = 0, flyTipAt = 0, flyHideUntil = 0;
+  var TIPS = ['Read page 1 first, then race page 2!', 'Ten minutes. You got this.', 'Stuck? Watch the lecture first.',
+              'Check answers at the bottom of page 2.', 'Tick it off when you finish!'];
+  var calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  function flyerWanted() {
+    if (!(!cloud || (user && ready))) return false;
+    var n = rows.filter(function (li) { return done[li.id]; }).length;
+    return n > 0 && n < TOTAL && viewer.hidden && !document.body.classList.contains('gated');
+  }
+  function makeFlyer() {
+    var art = $('buddy') && $('buddy').querySelector('.bit');
+    if (!art) return null;
+    var f = document.createElement('div');
+    f.className = 'flyer';
+    f.innerHTML = '<div class="px-bubble fly-say" hidden></div><button type="button" class="fly-btn" aria-label="Ember: show my progress"></button>';
+    var sprite = art.cloneNode(true);
+    sprite.setAttribute('class', 'bit bit-sm mood-idle fly-flap');
+    f.querySelector('.fly-btn').appendChild(sprite);
+    document.body.appendChild(f);
+    return f;
+  }
+  function flyArea() {
+    var w = window.innerWidth, h = window.innerHeight;
+    var minX = Math.max(8, Math.min(w - 200, (w + 1040) / 2 - 20)), maxX = w - 64;   // right gutter when there is one
+    if (maxX - minX < 60) minX = Math.max(8, w - 140);
+    return { minX: minX, maxX: maxX, minY: 70, maxY: h - 130 };
+  }
+  function pickGoal() {
+    var a = flyArea();
+    flyGoal = { x: a.minX + Math.random() * (a.maxX - a.minX), y: a.minY + Math.random() * Math.max(10, a.maxY - a.minY) };
+    flyNext = performance.now() + 2600 + Math.random() * 2600;
+  }
+  function flyStep(t) {
+    flyRaf = 0;
+    if (!flyer) return;
+    if (t > flyNext) pickGoal();
+    flyPos.x += (flyGoal.x - flyPos.x) * 0.018;
+    flyPos.y += (flyGoal.y - flyPos.y) * 0.018;
+    var bob = Math.sin(t / 380) * 4;
+    flyer.style.transform = 'translate(' + flyPos.x.toFixed(1) + 'px,' + (flyPos.y + bob).toFixed(1) + 'px)';
+    flyer.classList.toggle('to-left', flyGoal.x < flyPos.x - 4);
+    if (t > flyTipAt) { flySay(TIPS[Math.floor(Math.random() * TIPS.length)], false); flyTipAt = t + 28000 + Math.random() * 15000; }
+    flyRaf = requestAnimationFrame(flyStep);
+  }
+  var sayTimer = null;
+  function flySay(text, withNext) {
+    if (!flyer) return;
+    var b = flyer.querySelector('.fly-say'), nx = nextUp();
+    b.innerHTML = '<span>' + esc(text) + '</span>' + (withNext && nx
+      ? '<button type="button" class="row-next" data-next="' + nx.id + '">Next: ' + esc(num(nx)) + ' ' + esc(title(nx)) + ' →</button>' : '');
+    b.hidden = false;
+    clearTimeout(sayTimer);
+    sayTimer = setTimeout(function () { b.hidden = true; }, withNext ? 6000 : 3800);
+  }
+  function updateFlyer() {
+    var want = flyerWanted() && performance.now() > flyHideUntil;
+    if (want && !flyer) {
+      flyer = makeFlyer();
+      if (!flyer) return;
+      var a = flyArea();
+      flyPos = { x: a.maxX, y: a.maxY };
+      pickGoal();
+      flyTipAt = performance.now() + 9000;
+      if (calm) { flyer.classList.add('calm'); flyer.style.transform = 'translate(' + a.maxX + 'px,' + a.maxY + 'px)'; }
+      else flyRaf = requestAnimationFrame(flyStep);
+    } else if (!want && flyer) {
+      cancelAnimationFrame(flyRaf); flyRaf = 0;
+      flyer.remove(); flyer = null;
+    }
+  }
+  function poke() {
+    var n = rows.filter(function (li) { return done[li.id]; }).length;
+    var sp = flyer.querySelector('.bit');
+    sp.setAttribute('class', 'bit bit-sm mood-wow fly-flap');
+    setTimeout(function () { if (flyer) sp.setAttribute('class', 'bit bit-sm mood-idle fly-flap'); }, 900);
+    flySay(n + ' of ' + TOTAL + ' done. Keep going!', true);
+  }
+  window.addEventListener('resize', function () { if (flyer) pickGoal(); });
 
   /* ================= rendering ================= */
   var q = $('q');
@@ -268,6 +389,7 @@
 
     renderAuth();
     renderGate();
+    updateFlyer();
 
     var vd = $('viewer-done');
     if (vd && viewerId) {
@@ -387,7 +509,7 @@
     if (on) reacts[k] = true; else delete reacts[k];
     totals[k] = Math.max(0, (totals[k] || 0) + (on ? 1 : -1));
     if (cloud && fb) {
-      var batch = fb.f.writeBatch(fb.db), mine = { reacts: {} }, stat = {};
+      var batch = fb.f.writeBatch(fb.db), mine = { reacts: {}, lastReact: k }, stat = {};
       mine.reacts[k] = on ? fb.f.serverTimestamp() : fb.f.deleteField();
       stat[isLike ? 'likes' : 'subs'] = fb.f.increment(on ? 1 : -1);
       batch.set(userRef(), mine, { merge: true });
@@ -424,6 +546,7 @@
       location.hash = 'view-' + o.closest('.ws').id;          // the hash opens the viewer (Back closes it)
       return;
     }
+    if (t.closest('.fly-btn')) { poke(); return; }
     var y = t.closest('.yt-like, .yt-sub');
     if (y) { react(y); return; }
     var d = t.closest('.ws .done');
@@ -433,6 +556,7 @@
     var n = t.closest('[data-next]');
     if (n) {
       e.preventDefault();
+      if (n.classList.contains('row-next')) clearRowBuddy();
       if (filter === 'done') { filter = 'all'; render(); }
       var target = $(n.getAttribute('data-next'));
       target.scrollIntoView({ block: 'center' });
@@ -460,6 +584,9 @@
       pdfjsReady = new Promise(function (ok, fail) {
         var s = document.createElement('script');
         s.src = PDFJS + 'pdf.min.js';
+        s.integrity = 'sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==';
+        s.crossOrigin = 'anonymous';
+        s.referrerPolicy = 'no-referrer';
         s.onload = function () {
           window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js';
           ok(window.pdfjsLib);
@@ -486,7 +613,7 @@
     track('pdf-' + li.id, 'PDF: ' + title(li));
     render();
 
-    loadPdfjs().then(function (lib) { return lib.getDocument(url).promise; }).then(function (doc) {
+    loadPdfjs().then(function (lib) { return lib.getDocument({ url: url, isEvalSupported: false }).promise; }).then(function (doc) {
       if (mine !== job) return;
       pages.innerHTML = '';
       var width = Math.min(pages.clientWidth - 20, 900);
@@ -520,6 +647,7 @@
     pages.innerHTML = '';
     document.body.classList.remove('viewing');
     if (lastFocus && lastFocus.focus) lastFocus.focus();
+    render();
   }
   function route() {
     var m = /^#view-(a\d+)$/.exec(location.hash);

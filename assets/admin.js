@@ -4,10 +4,18 @@
 (function () {
   'use strict';
 
-  var SITE = window.SITE || {};
+  // Refuse to run inside another site's frame (clickjacking).
+  if (window.top !== window.self) {
+    try { window.top.location = window.location.href; } catch (e) { document.documentElement.style.display = 'none'; }
+    return;
+  }
+  function readConfig() {
+    try { return JSON.parse(document.getElementById('site-config').textContent); } catch (e) { return {}; }
+  }
+  var SITE = readConfig();
   var CFG = SITE.firebase && SITE.firebase.apiKey ? SITE.firebase : null;
   var SDK = SITE.firebaseSdk || 'https://www.gstatic.com/firebasejs/10.12.2/';
-  var COURSE = window.COURSE || [];
+  var COURSE = SITE.course || [];
   var IDS = {}; COURSE.forEach(function (w) { IDS[w.id] = w; });
   var VIDEO = {}; COURSE.forEach(function (w) { w.videos.forEach(function (v) { if (!VIDEO[v.id]) VIDEO[v.id] = { title: v.title, ws: w }; }); });
   var N = COURSE.length;
@@ -26,7 +34,7 @@
     return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
-  var fb = null, user = null, students = [], stats = {}, q = '';
+  var fb = null, user = null, students = [], stats = {}, msgs = [], q = '';
 
   /* ---------- gate ---------- */
   function gate(state, text) {
@@ -80,7 +88,9 @@
   /* ---------- data ---------- */
   function load() {
     $('adm-updated').textContent = 'Loading…';
-    Promise.all([fb.f.getDocs(fb.f.collection(fb.db, 'users')), fb.f.getDocs(fb.f.collection(fb.db, 'stats'))])
+    var F = fb.f;
+    Promise.all([F.getDocs(F.collection(fb.db, 'users')), F.getDocs(F.collection(fb.db, 'stats')),
+                 F.getDocs(F.query(F.collection(fb.db, 'feedback'), F.orderBy('at', 'desc'), F.limit(200)))])
       .then(function (r) {
         students = [];
         r[0].forEach(function (d) {
@@ -98,6 +108,8 @@
         students.sort(function (a, b) { return b.n - a.n || (b.seen || 0) - (a.seen || 0); });
         stats = {};
         r[1].forEach(function (d) { stats[d.id] = d.data(); });
+        msgs = [];
+        r[2].forEach(function (d) { var v = d.data(); v.id = d.id; msgs.push(v); });
         gate('in');
         render();
       })
@@ -157,6 +169,16 @@
 
     renderStudents();
 
+    // messages from the Contact page
+    $('msgs').innerHTML = msgs.length ? msgs.map(function (m) {
+      var subj = encodeURIComponent('Re: your ' + (m.topic || 'message').toLowerCase() + ' on ' + document.title.split('|').pop().trim());
+      return '<li class="msg"><div class="msg-top"><span class="px-chip">' + esc(m.topic) + '</span>' +
+        '<strong>' + esc(m.name || '(no name)') + '</strong>' +
+        '<a href="mailto:' + encodeURIComponent(m.email || '') + '?subject=' + subj + '">' + esc(m.email || '') + '</a>' +
+        '<span class="msg-when">' + ago(when(m.at)) + '</span></div>' +
+        '<p class="msg-body">' + esc(m.message) + '</p></li>';
+    }).join('') : '<li class="adm-sub">No messages yet.</li>';
+
     // reactions
     var vids = Object.keys(stats).filter(function (k) { return k.indexOf('v_') === 0 && (stats[k].likes || 0) > 0; })
       .map(function (k) { var id = k.slice(2), v = VIDEO[id]; return { likes: stats[k].likes, title: v ? v.title : id, ws: v ? v.ws.no + ' ' + v.ws.title : '' }; })
@@ -194,7 +216,13 @@
       var nos = COURSE.filter(function (w) { return s.done[w.id]; }).map(function (w) { return w.no; }).join(' ');
       rowsOut.push([s.name, s.email, s.n, N, nos, s.seen ? s.seen.toISOString() : '', s.likes, s.sub ? 'yes' : 'no']);
     });
-    var text = rowsOut.map(function (r) { return r.map(function (c) { c = String(c); return /[",\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(','); }).join('\n');
+    var text = rowsOut.map(function (r) {
+      return r.map(function (c) {
+        c = String(c);
+        if (/^[=+\-@\t\r]/.test(c)) c = "'" + c;          // stop names like =HYPERLINK(...) running as formulas
+        return /[",\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c;
+      }).join(',');
+    }).join('\n');
     var a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' }));
     a.download = 'class-progress-' + new Date().toISOString().slice(0, 10) + '.csv';
