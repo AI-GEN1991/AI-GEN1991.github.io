@@ -42,7 +42,7 @@
       <p class="byline">Ashwini Kumar Mathur</p>
       <dl class="facts">
         <div><dt>24</dt><dd>worksheets</dd></div>
-        <div><dt>2</dt><dd>pages each</dd></div>
+        <div><dt>48</dt><dd>topics</dd></div>
         <div><dt>10</dt><dd>minutes</dd></div>
         <div><dt>17</dt><dd>video lectures</dd></div>
       </dl>
@@ -66,16 +66,33 @@
         <input id="q" type="search" placeholder="Search topics, e.g. Hough, YOLO, colour" autocomplete="off">
       </label>
     </div>
-    <nav class="toc" aria-label="Modules"><a href="#image-fundamentals">Image Fundamentals</a><a href="#enhancement-and-filtering">Enhancement and Filtering</a><a href="#edges-lines-and-shapes">Edges, Lines and Shapes</a><a href="#segmentation">Segmentation</a><a href="#features-and-motion">Features and Motion</a><a href="#object-detection">Object Detection</a><a href="#attention-and-vision-transformers">Attention and Vision Transformers</a></nav>
+    <nav class="toc" aria-label="Modules"><a href="#image-formation-and-fundamentals">Image Formation and Fundamentals</a><a href="#image-features-and-motion">Image Features and Motion</a><a href="#deep-learning-for-computer-vision">Deep Learning for Computer Vision</a><a href="#video-understanding-and-transformers">Video Understanding and Transformers</a><a href="#advanced-vision-learning">Advanced Vision Learning</a></nav>
     <p class="empty" id="empty" hidden>No worksheet matches that search.</p>
 
-    <section class="module" id="image-fundamentals">
+    <section class="module" id="image-formation-and-fundamentals">
       <header class="module-head">
         <span class="module-no">Module 1</span>
-        <h2>Image Fundamentals</h2>
-        <p>How a picture becomes numbers, and what colour means.</p>
+        <h2>Image Formation and Fundamentals</h2>
+        <p>How a picture is captured, turned into numbers, coloured and filtered.</p>
+        <span class="module-count">7 of 10 worksheets ready</span>
       </header>
       <ul class="ws-list">
+        <li class="ws soon" id="t-introduction-to-image-formation" data-search="introduction to image formation coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>Introduction to Image Formation</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+        <li class="ws soon" id="t-image-sensing-and-acquisition" data-search="image sensing and acquisition coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>Image Sensing and Acquisition</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
         <li class="ws" id="a01" data-search="01 image sampling and quantization sampling picks where we measure. quantization picks how finely we record.">
           <div class="ws-no" aria-label="Worksheet 01">01</div>
           <div class="ws-main">
@@ -103,6 +120,14 @@
             <button class="btn like" type="button" aria-pressed="false" aria-label="Like worksheet 02">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" stroke-linejoin="round"/></svg><span class="n"></span></button>
           </div>
+        </li>
+        <li class="ws soon" id="t-camera-geometry" data-search="camera geometry coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>Camera Geometry</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
         </li>
         <li class="ws" id="a18" data-search="18 color image fundamentals three numbers per pixel. rgb for screens, cmy for printers, hsi for describing colour the way people do.">
           <div class="ws-no" aria-label="Worksheet 18">18</div>
@@ -146,15 +171,6 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" stroke-linejoin="round"/></svg><span class="n"></span></button>
           </div>
         </li>
-      </ul>
-    </section>
-    <section class="module" id="enhancement-and-filtering">
-      <header class="module-head">
-        <span class="module-no">Module 2</span>
-        <h2>Enhancement and Filtering</h2>
-        <p>Changing pixel values directly and with small masks.</p>
-      </header>
-      <ul class="ws-list">
         <li class="ws" id="a03" data-search="03 spatial domain processing change the picture by working directly on its pixel values: g(x,y) = t[f(x,y)].">
           <div class="ws-no" aria-label="Worksheet 03">03</div>
           <div class="ws-main">
@@ -185,11 +201,12 @@
         </li>
       </ul>
     </section>
-    <section class="module" id="edges-lines-and-shapes">
+    <section class="module" id="image-features-and-motion">
       <header class="module-head">
-        <span class="module-no">Module 3</span>
-        <h2>Edges, Lines and Shapes</h2>
-        <p>Finding boundaries, linking them, and cleaning binary shapes.</p>
+        <span class="module-no">Module 2</span>
+        <h2>Image Features and Motion</h2>
+        <p>Edges, regions, keypoints and how things move between frames.</p>
+        <span class="module-count">8 of 9 worksheets ready</span>
       </header>
       <ul class="ws-list">
         <li class="ws" id="a05" data-search="05 edge detection an edge is where brightness changes fast. derivatives find it; canny cleans it up.">
@@ -220,29 +237,6 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" stroke-linejoin="round"/></svg><span class="n"></span></button>
           </div>
         </li>
-        <li class="ws" id="a08" data-search="08 morphological processing probe a binary shape with a small stamp: shrink it, grow it, clean it, outline it.">
-          <div class="ws-no" aria-label="Worksheet 08">08</div>
-          <div class="ws-main">
-            <h3>Morphological Processing</h3>
-            <p>Probe a binary shape with a small stamp: shrink it, grow it, clean it, outline it.</p>
-          </div>
-          <div class="ws-actions">
-            <a class="btn btn-solid open" href="worksheets/A08_morphological_processing.pdf">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l6 6v14H6z M14 2v6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Open<span class="lg">&nbsp;worksheet</span></a>
-            <a class="btn btn-ghost watch" href="https://youtu.be/JMmwUZt6ypY" data-videos="JMmwUZt6ypY~Morphological Image Processing Explained: Erosion, Dilation, Opening, Closing" aria-expanded="false" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Watch<span class="lg"> lecture</span></a>
-            <button class="btn like" type="button" aria-pressed="false" aria-label="Like worksheet 08">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" stroke-linejoin="round"/></svg><span class="n"></span></button>
-          </div>
-        </li>
-      </ul>
-    </section>
-    <section class="module" id="segmentation">
-      <header class="module-head">
-        <span class="module-no">Module 4</span>
-        <h2>Segmentation</h2>
-        <p>Splitting an image into meaningful regions.</p>
-      </header>
-      <ul class="ws-list">
         <li class="ws" id="a07" data-search="07 segmentation: thresholding pick one gray level t. everything brighter is object, everything darker is background.">
           <div class="ws-no" aria-label="Worksheet 07">07</div>
           <div class="ws-main">
@@ -254,6 +248,20 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l6 6v14H6z M14 2v6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Open<span class="lg">&nbsp;worksheet</span></a>
             <a class="btn btn-ghost watch" href="https://youtu.be/BDrPWLqCmzE" data-videos="BDrPWLqCmzE~Image Thresholding Explained: Histograms, Otsu&#x27;s Method and Adaptive Thresholding" aria-expanded="false" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Watch<span class="lg"> lecture</span></a>
             <button class="btn like" type="button" aria-pressed="false" aria-label="Like worksheet 07">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" stroke-linejoin="round"/></svg><span class="n"></span></button>
+          </div>
+        </li>
+        <li class="ws" id="a08" data-search="08 morphological processing probe a binary shape with a small stamp: shrink it, grow it, clean it, outline it.">
+          <div class="ws-no" aria-label="Worksheet 08">08</div>
+          <div class="ws-main">
+            <h3>Morphological Processing</h3>
+            <p>Probe a binary shape with a small stamp: shrink it, grow it, clean it, outline it.</p>
+          </div>
+          <div class="ws-actions">
+            <a class="btn btn-solid open" href="worksheets/A08_morphological_processing.pdf">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l6 6v14H6z M14 2v6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Open<span class="lg">&nbsp;worksheet</span></a>
+            <a class="btn btn-ghost watch" href="https://youtu.be/JMmwUZt6ypY" data-videos="JMmwUZt6ypY~Morphological Image Processing Explained: Erosion, Dilation, Opening, Closing" aria-expanded="false" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Watch<span class="lg"> lecture</span></a>
+            <button class="btn like" type="button" aria-pressed="false" aria-label="Like worksheet 08">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" stroke-linejoin="round"/></svg><span class="n"></span></button>
           </div>
         </li>
@@ -271,29 +279,6 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" stroke-linejoin="round"/></svg><span class="n"></span></button>
           </div>
         </li>
-        <li class="ws" id="a16" data-search="16 image segmentation give every pixel a label. grow regions, cluster colours, or let an encoder–decoder do it.">
-          <div class="ws-no" aria-label="Worksheet 16">16</div>
-          <div class="ws-main">
-            <h3>Image Segmentation</h3>
-            <p>Give every pixel a label. Grow regions, cluster colours, or let an encoder–decoder do it.</p>
-          </div>
-          <div class="ws-actions">
-            <a class="btn btn-solid open" href="worksheets/A16_image_segmentation.pdf">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l6 6v14H6z M14 2v6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Open<span class="lg">&nbsp;worksheet</span></a>
-            <a class="btn btn-ghost watch" href="https://youtu.be/A0b3zpYuj0c" data-videos="A0b3zpYuj0c~U-Net Explained: How AI Labels Every Pixel|BDrPWLqCmzE~Image Thresholding Explained" aria-expanded="false" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Watch<span class="lg"> lectures</span> (2)</a>
-            <button class="btn like" type="button" aria-pressed="false" aria-label="Like worksheet 16">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" stroke-linejoin="round"/></svg><span class="n"></span></button>
-          </div>
-        </li>
-      </ul>
-    </section>
-    <section class="module" id="features-and-motion">
-      <header class="module-head">
-        <span class="module-no">Module 5</span>
-        <h2>Features and Motion</h2>
-        <p>Points worth tracking, their scale, and how they move.</p>
-      </header>
-      <ul class="ws-list">
         <li class="ws" id="a10" data-search="10 corner detection slide a small window. flat: nothing changes. edge: one direction changes. corner: every direction changes.">
           <div class="ws-no" aria-label="Worksheet 10">10</div>
           <div class="ws-main">
@@ -322,6 +307,14 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" stroke-linejoin="round"/></svg><span class="n"></span></button>
           </div>
         </li>
+        <li class="ws soon" id="t-sift" data-search="sift coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>SIFT</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
         <li class="ws" id="a21" data-search="21 optical flow how far did each pixel move between two frames? one equation, two unknowns, a window to the rescue.">
           <div class="ws-no" aria-label="Worksheet 21">21</div>
           <div class="ws-main">
@@ -338,13 +331,30 @@
         </li>
       </ul>
     </section>
-    <section class="module" id="object-detection">
+    <section class="module" id="deep-learning-for-computer-vision">
       <header class="module-head">
-        <span class="module-no">Module 6</span>
-        <h2>Object Detection</h2>
-        <p>From sliding windows to region-based and one-shot detectors.</p>
+        <span class="module-no">Module 3</span>
+        <h2>Deep Learning for Computer Vision</h2>
+        <p>CNNs for detection, segmentation and recognition.</p>
+        <span class="module-count">5 of 14 worksheets ready</span>
       </header>
       <ul class="ws-list">
+        <li class="ws soon" id="t-convolutional-neural-networks-cnns" data-search="convolutional neural networks (cnns) coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>Convolutional Neural Networks (CNNs)</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+        <li class="ws soon" id="t-neural-style-transfer" data-search="neural style transfer coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>Neural Style Transfer</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
         <li class="ws" id="a12" data-search="12 object detection say what is in the image and where: one labelled box per object.">
           <div class="ws-no" aria-label="Worksheet 12">12</div>
           <div class="ws-main">
@@ -401,29 +411,118 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" stroke-linejoin="round"/></svg><span class="n"></span></button>
           </div>
         </li>
-        <li class="ws" id="a24" data-search="24 yolo: you only look once one network, one pass: split the image into a grid and let each cell predict boxes and classes.">
-          <div class="ws-no" aria-label="Worksheet 24">24</div>
+        <li class="ws soon" id="t-retinanet" data-search="retinanet coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
           <div class="ws-main">
-            <h3>YOLO: You Only Look Once</h3>
-            <p>One network, one pass: split the image into a grid and let each cell predict boxes and classes.</p>
+            <h3>RetinaNet</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+        <li class="ws" id="a16" data-search="16 image segmentation give every pixel a label. grow regions, cluster colours, or let an encoder–decoder do it.">
+          <div class="ws-no" aria-label="Worksheet 16">16</div>
+          <div class="ws-main">
+            <h3>Image Segmentation</h3>
+            <p>Give every pixel a label. Grow regions, cluster colours, or let an encoder–decoder do it.</p>
           </div>
           <div class="ws-actions">
-            <a class="btn btn-solid open" href="worksheets/A24_yolo.pdf">
+            <a class="btn btn-solid open" href="worksheets/A16_image_segmentation.pdf">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l6 6v14H6z M14 2v6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Open<span class="lg">&nbsp;worksheet</span></a>
-            <a class="btn btn-ghost watch" href="https://youtu.be/xKjqm60xLaQ" data-videos="xKjqm60xLaQ~Object Detection Explained: Sliding Windows, HOG, IoU, NMS, mAP and YOLO" aria-expanded="false" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Watch<span class="lg"> lecture</span></a>
-            <button class="btn like" type="button" aria-pressed="false" aria-label="Like worksheet 24">
+            <a class="btn btn-ghost watch" href="https://youtu.be/A0b3zpYuj0c" data-videos="A0b3zpYuj0c~U-Net Explained: How AI Labels Every Pixel|BDrPWLqCmzE~Image Thresholding Explained" aria-expanded="false" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Watch<span class="lg"> lectures</span> (2)</a>
+            <button class="btn like" type="button" aria-pressed="false" aria-label="Like worksheet 16">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" stroke-linejoin="round"/></svg><span class="n"></span></button>
           </div>
         </li>
+        <li class="ws soon" id="t-fully-convolutional-networks-fcn" data-search="fully convolutional networks (fcn) coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>Fully Convolutional Networks (FCN)</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+        <li class="ws soon" id="t-u-net" data-search="u-net coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>U-Net</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+        <li class="ws soon" id="t-mask-r-cnn" data-search="mask r-cnn coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>Mask R-CNN</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+        <li class="ws soon" id="t-image-recognition" data-search="image recognition coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>Image Recognition</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+        <li class="ws soon" id="t-face-verification" data-search="face verification coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>Face Verification</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+        <li class="ws soon" id="t-facenet" data-search="facenet coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>FaceNet</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
       </ul>
     </section>
-    <section class="module" id="attention-and-vision-transformers">
+    <section class="module" id="video-understanding-and-transformers">
       <header class="module-head">
-        <span class="module-no">Module 7</span>
-        <h2>Attention and Vision Transformers</h2>
-        <p>Self-attention and the ViT, worked by hand.</p>
+        <span class="module-no">Module 4</span>
+        <h2>Video Understanding and Transformers</h2>
+        <p>Sequences, attention and the Vision Transformer.</p>
+        <span class="module-count">3 of 7 worksheets ready</span>
       </header>
       <ul class="ws-list">
+        <li class="ws soon" id="t-video-understanding" data-search="video understanding coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>Video Understanding</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+        <li class="ws soon" id="t-recurrent-neural-networks-rnns" data-search="recurrent neural networks (rnns) coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>Recurrent Neural Networks (RNNs)</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+        <li class="ws soon" id="t-cnn-rnn-architectures" data-search="cnn + rnn architectures coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>CNN + RNN Architectures</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+        <li class="ws soon" id="t-action-recognition" data-search="action recognition coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>Action Recognition</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
         <li class="ws" id="a17" data-search="17 attention mechanism queries ask, keys answer how relevant they are, and the values are mixed by those weights.">
           <div class="ws-no" aria-label="Worksheet 17">17</div>
           <div class="ws-main">
@@ -468,12 +567,92 @@
         </li>
       </ul>
     </section>
+    <section class="module" id="advanced-vision-learning">
+      <header class="module-head">
+        <span class="module-no">Module 5</span>
+        <h2>Advanced Vision Learning</h2>
+        <p>Fast detectors, learning from few labels, and reinforcement learning.</p>
+        <span class="module-count">1 of 8 worksheets ready</span>
+      </header>
+      <ul class="ws-list">
+        <li class="ws" id="a24" data-search="24 yolo: you only look once one network, one pass: split the image into a grid and let each cell predict boxes and classes.">
+          <div class="ws-no" aria-label="Worksheet 24">24</div>
+          <div class="ws-main">
+            <h3>YOLO: You Only Look Once</h3>
+            <p>One network, one pass: split the image into a grid and let each cell predict boxes and classes.</p>
+          </div>
+          <div class="ws-actions">
+            <a class="btn btn-solid open" href="worksheets/A24_yolo.pdf">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l6 6v14H6z M14 2v6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Open<span class="lg">&nbsp;worksheet</span></a>
+            <a class="btn btn-ghost watch" href="https://youtu.be/xKjqm60xLaQ" data-videos="xKjqm60xLaQ~Object Detection Explained: Sliding Windows, HOG, IoU, NMS, mAP and YOLO" aria-expanded="false" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Watch<span class="lg"> lecture</span></a>
+            <button class="btn like" type="button" aria-pressed="false" aria-label="Like worksheet 24">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z" stroke-linejoin="round"/></svg><span class="n"></span></button>
+          </div>
+        </li>
+        <li class="ws soon" id="t-zero-shot-learning" data-search="zero-shot learning coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>Zero-shot Learning</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+        <li class="ws soon" id="t-one-shot-learning" data-search="one-shot learning coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>One-shot Learning</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+        <li class="ws soon" id="t-few-shot-learning" data-search="few-shot learning coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>Few-shot Learning</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+        <li class="ws soon" id="t-self-supervised-learning" data-search="self-supervised learning coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>Self-supervised Learning</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+        <li class="ws soon" id="t-clip" data-search="clip coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>CLIP</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+        <li class="ws soon" id="t-q-learning" data-search="q-learning coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>Q-Learning</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+        <li class="ws soon" id="t-deep-q-networks-dqn" data-search="deep q-networks (dqn) coming soon">
+          <div class="ws-no" aria-hidden="true">&middot;</div>
+          <div class="ws-main">
+            <h3>Deep Q-Networks (DQN)</h3>
+            <p>Worksheet in preparation.</p>
+          </div>
+          <div class="ws-actions"><span class="soon-tag">Coming soon</span></div>
+        </li>
+      </ul>
+    </section>
   </main>
 
   <footer class="footer">
     <div class="wrap footer-in">
       <p>&copy; 2026 Ashwini Kumar Mathur. All rights reserved.</p>
-      <p><a href="https://www.youtube.com/channel/UCsRScR5NRVa1LrJ7a62EvyQ" target="_blank" rel="noopener">Binary Star on YouTube</a> &middot; Updated 11 November 2026 <span class="stats" id="stats"></span></p>
+      <p><a href="https://www.youtube.com/channel/UCsRScR5NRVa1LrJ7a62EvyQ" target="_blank" rel="noopener">Binary Star on YouTube</a> &middot; Updated 15 November 2026 <span class="stats" id="stats"></span></p>
     </div>
   </footer>
 

@@ -106,6 +106,12 @@ h1 { margin: 0; font-family: var(--serif); font-weight: 700; font-size: clamp(2r
 .like[aria-pressed="true"] svg { fill: currentColor; }
 .like .n:empty { display: none; }
 
+.module-count { display: block; margin-top: 4px; color: var(--muted); font-size: .85rem; font-weight: 600; }
+.ws.soon h3 { color: var(--muted); font-weight: 600; }
+.ws.soon .ws-no { color: #b9b5ad; }
+.ws.soon:hover { background: transparent; }
+.soon-tag { display: inline-block; padding: 4px 10px; border: 1px dashed #cfcbc3; border-radius: 999px; color: var(--muted); font-size: .82rem; font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
+
 /* ---------- video panel ---------- */
 .player { grid-column: 1 / -1; margin: 6px 0 4px; padding: 14px; background: var(--fog); border: 1px solid var(--line); border-radius: var(--radius); }
 .player-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
