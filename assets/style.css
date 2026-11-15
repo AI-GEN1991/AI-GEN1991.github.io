@@ -156,14 +156,39 @@ h1 { margin: 0; font-family: var(--serif); font-weight: 700; font-size: clamp(2r
 .ws.flash { animation: flash 1.6s ease; }
 @keyframes flash { 0%, 40% { background: #fdf3d8; } 100% { background: transparent; } }
 
-/* ---------- YouTube links under the player ---------- */
+/* ---------- Like / Subscribe under the player (stay on this page) ---------- */
 .yt-links { display: inline-flex; gap: 8px; flex-wrap: wrap; }
-.yt-links a { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: .86rem; text-decoration: none; padding: 5px 11px; border-radius: 999px; }
+.yt-links button { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-weight: 600; font-size: .86rem; padding: 6px 13px; border-radius: 999px; cursor: pointer; transition: background .2s, color .2s, border-color .2s; }
 .yt-links svg { width: 14px; height: 14px; }
 .yt-like { color: var(--ink); background: #fff; border: 1px solid var(--line); }
-.yt-like:hover { color: var(--ink); border-color: #c9c6bf; }
+.yt-like:hover { border-color: #c9c6bf; }
+.yt-like[aria-pressed="true"] { color: #1a5fb4; background: #eef4fc; border-color: #b9cfee; }
 .yt-sub { color: #fff; background: #cc0000; border: 1px solid #cc0000; }
-.yt-sub:hover { color: #fff; background: #a80000; }
+.yt-sub:hover { background: #a80000; }
+.yt-sub[aria-pressed="true"] { color: var(--ink); background: #ecebe8; border-color: #ecebe8; }
+.yt-links button.pop { animation: pop-btn .45s ease; }
+@keyframes pop-btn { 0% { transform: scale(1); } 35% { transform: scale(1.18); } 70% { transform: scale(.96); } 100% { transform: scale(1); } }
+
+/* celebration burst */
+.burst { position: fixed; z-index: 60; width: 0; height: 0; pointer-events: none; }
+.burst .pc { position: absolute; left: 0; top: 0; font-size: calc(23px * var(--s)); line-height: 1; opacity: 0; animation: fly 1.3s cubic-bezier(.2, .7, .3, 1) var(--d) forwards; }
+@keyframes fly {
+  0% { transform: translate(-50%, 0) scale(.3); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), var(--dy)) rotate(var(--rot)) scale(1); opacity: 0; }
+}
+.burst .bubble { position: absolute; left: 0; top: 0; padding: 6px 12px; border-radius: 999px; background: var(--ink); color: #fff; font-size: .85rem; font-weight: 700; white-space: nowrap; box-shadow: 0 6px 18px rgba(0, 0, 0, .2); animation: bubble 1.7s ease forwards; }
+@keyframes bubble {
+  0% { transform: translate(-50%, -90%) scale(.6); opacity: 0; }
+  15% { transform: translate(-50%, -150%) scale(1.06); opacity: 1; }
+  25% { transform: translate(-50%, -140%) scale(1); }
+  80% { opacity: 1; }
+  100% { transform: translate(-50%, -175%); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .burst .pc { display: none; }
+  .yt-links button.pop { animation: none; }
+}
 .novideo { color: #9a968e; border-color: var(--line); cursor: default; }
 .novideo:hover { background: #fff; border-color: var(--line); }
 

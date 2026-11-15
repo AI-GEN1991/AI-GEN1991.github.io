@@ -224,7 +224,8 @@
       'loading="lazy" allowfullscreen allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" ' +
       'referrerpolicy="strict-origin-when-cross-origin"></iframe>';
     p.querySelector('.player-foot strong').textContent = v.title;
-    p.querySelector('.yt-like').href = 'https://www.youtube.com/watch?v=' + v.id;
+    p.querySelector('.yt-like').setAttribute('data-vid', v.id);
+    paintReactions(p);
     [].forEach.call(p.querySelectorAll('.player-tabs button'), function (t, k) {
       t.setAttribute('aria-selected', k === i ? 'true' : 'false');
     });
@@ -240,14 +241,14 @@
     var tabs = vids.length < 2 ? '' : '<div class="player-tabs" role="tablist">' + vids.map(function (v, i) {
       return '<button type="button" role="tab" data-i="' + i + '">Lecture ' + (i + 1) + '</button>';
     }).join('') + '</div>';
-    // Like / comment / subscribe only work on youtube.com, so these open it in a new tab.
+    // Like and Subscribe stay on this page: they toggle and celebrate, nothing opens YouTube.
     p.innerHTML = tabs + '<div class="frame"></div>' +
       '<div class="player-foot"><strong></strong>' +
         '<span class="yt-links">' +
-          '<a class="yt-like" target="_blank" rel="noopener">' +
+          '<button type="button" class="yt-like" aria-pressed="false">' +
             '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 21h4V9H2v12zm20-11a2 2 0 0 0-2-2h-6.3l1-4.6v-.3c0-.4-.2-.8-.4-1.1L13.2 1 6.6 7.6C6.2 8 6 8.5 6 9v10a2 2 0 0 0 2 2h9c.8 0 1.5-.5 1.8-1.2l3-7.1c.1-.2.2-.5.2-.7v-2z"/></svg>' +
-            'Like or comment</a>' +
-          '<a class="yt-sub" href="' + esc(CHANNEL) + '?sub_confirmation=1" target="_blank" rel="noopener">Subscribe</a>' +
+            '<span class="t">Like</span></button>' +
+          '<button type="button" class="yt-sub" aria-pressed="false"><span class="t">Subscribe</span></button>' +
         '</span></div>';
     li.appendChild(p);
     p.addEventListener('click', function (e) {
@@ -257,6 +258,51 @@
     btn.setAttribute('aria-expanded', 'true');
     show(li, vids, 0);
     track('video-' + li.id, 'Video: ' + title(li));
+  }
+
+  /* ================= Like / Subscribe: on-page reactions with a little celebration ================= */
+  var ytLiked = lsGet('bs-yt-liked', {});    // video id -> true
+  var ytSub = lsGet('bs-yt-sub', false);
+  function paintReactions(p) {
+    var lk = p.querySelector('.yt-like'), sb = p.querySelector('.yt-sub');
+    var on = !!ytLiked[lk.getAttribute('data-vid')];
+    lk.setAttribute('aria-pressed', on ? 'true' : 'false');
+    lk.querySelector('.t').textContent = on ? 'Liked' : 'Like';
+    sb.setAttribute('aria-pressed', ytSub ? 'true' : 'false');
+    sb.querySelector('.t').textContent = ytSub ? 'Subscribed ✓' : 'Subscribe';
+  }
+  function celebrate(btn, icons, message) {
+    var r = btn.getBoundingClientRect();
+    var layer = document.createElement('div');
+    layer.className = 'burst';
+    layer.style.left = (r.left + r.width / 2) + 'px';
+    layer.style.top = r.top + 'px';
+    var html = '<span class="bubble">' + esc(message) + '</span>';
+    for (var i = 0; i < 16; i++) {
+      var dx = Math.round((Math.random() - .5) * 180), dy = -Math.round(70 + Math.random() * 120);
+      html += '<span class="pc" style="--dx:' + dx + 'px;--dy:' + dy + 'px;--rot:' + Math.round((Math.random() - .5) * 90) +
+        'deg;--d:' + Math.round(Math.random() * 180) + 'ms;--s:' + (0.8 + Math.random() * 0.7).toFixed(2) + '">' +
+        icons[i % icons.length] + '</span>';
+    }
+    layer.innerHTML = html;
+    document.body.appendChild(layer);
+    btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop');
+    setTimeout(function () { layer.remove(); }, 1800);
+  }
+  function react(btn) {
+    var p = btn.closest('.player');
+    if (btn.classList.contains('yt-like')) {
+      var id = btn.getAttribute('data-vid'), on = !ytLiked[id];
+      if (on) ytLiked[id] = true; else delete ytLiked[id];
+      lsSet('bs-yt-liked', ytLiked);
+      if (on) { celebrate(btn, ['❤️', '👍', '✨', '🎈', '🎉'], 'Thanks for the like!'); track('like-' + id, 'Like: ' + id); }
+    } else {
+      ytSub = !ytSub;
+      lsSet('bs-yt-sub', ytSub);
+      if (ytSub) { celebrate(btn, ['🎈', '🎉', '✨', '🔔', '⭐'], 'Welcome aboard!'); track('subscribe', 'Subscribe'); }
+    }
+    [].forEach.call(document.querySelectorAll('.player'), paintReactions);
+    if (p) paintReactions(p);
   }
 
   /* ================= clicks ================= */
@@ -276,6 +322,8 @@
       location.hash = 'view-' + o.closest('.ws').id;          // the hash opens the viewer (Back closes it)
       return;
     }
+    var y = t.closest('.yt-like, .yt-sub');
+    if (y) { react(y); return; }
     var d = t.closest('.ws .done');
     if (d) { toggleDone(d.closest('.ws').id); return; }
     var f = t.closest('#seg button');
