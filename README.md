@@ -25,6 +25,12 @@ Sign-in, progress, likes and messages use Firebase (project `practice-minutes-wo
 The database rules live in `../firestore.rules`; after changing them, publish them in the
 Firebase console (Firestore Database > Rules). Every page carries a Content Security Policy.
 
+The Firebase web API key only works from these addresses (Google Cloud console >
+APIs & Services > Credentials > Browser key > Website restrictions):
+`https://ai-gen1991.github.io/*`, `https://practice-minutes-worksheets.firebaseapp.com/*`
+and `http://localhost:8000/*`. If the site moves to a new address, add it there and in
+Firebase Authentication > Settings > Authorized domains.
+
 Ember is an original character drawn for this site.
 
 (c) Ashwini Kumar Mathur. All rights reserved.
