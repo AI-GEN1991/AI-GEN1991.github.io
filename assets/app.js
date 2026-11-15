@@ -123,6 +123,8 @@
       ? '<img class="' + cls + '" src="' + esc(u.photoURL) + '" alt="" referrerpolicy="no-referrer">'
       : '<span class="' + cls + ' initial">' + initial + '</span>';
   }
+  // Only a convenience link: the dashboard data itself is protected by the database rules.
+  function isTeacher() { return !!(user && user.email === ['ashmathur91', 'gmail.com'].join('@')); }
   function renderAuth() {
     var key = !cloud ? 'off' : !fb ? 'wait' : user ? 'in:' + user.uid : 'out';
     if (key === authKey) return;
@@ -139,6 +141,7 @@
       '<div class="menu" id="menu" hidden>' +
         '<div class="menu-who">' + avatar(user, 'av av-lg') +
           '<div><strong>' + esc(user.displayName || 'Signed in') + '</strong><span>' + esc(user.email || '') + '</span></div></div>' +
+        (isTeacher() ? '<a class="menu-out menu-dash" href="admin.html">Class dashboard</a>' : '') +
         '<button type="button" class="menu-out" id="signout">Sign out</button>' +
       '</div>';
   }
@@ -234,6 +237,7 @@
     return null;
   }
   function greet() {
+    if (!viewer.hidden) { setTimeout(function () { whenIdle(greet); }, 1500); return; }   // wait until the worksheet is closed
     var n = Object.keys(done).filter(function (k) { return $(k); }).length, nx = nextUp(), who = firstName();
     if (!n) buddy('Welcome' + (who ? ', ' + who : '') + '! Start with ' + (nx ? num(nx) + ' ' + title(nx) : 'any worksheet') + '.', 'wow');
     else if (!nx) buddy('All ' + TOTAL + ' done' + (who ? ', ' + who : '') + '. Legend!', 'fire');
@@ -401,20 +405,37 @@
     $('empty').textContent = filter === 'done' && !terms.length ? 'Nothing ticked off yet. Mark a worksheet done when you finish it.'
       : filter === 'todo' && !terms.length ? 'All done. Well played!' : 'No worksheet matches that search.';
 
-    // progress panel
-    var text = $('progress-text');
+    // progress panel: ring, greeting, Continue button
+    var text = $('progress-text'), pct = tracking ? Math.round(100 * nDone / TOTAL) : 0;
     $('progress').classList.toggle('is-out', !tracking);
-    $('bar-fill').style.width = (tracking ? Math.round(100 * nDone / TOTAL) : 0) + '%';
+    $('ring-fg').style.strokeDashoffset = (100.53 * (1 - pct / 100)).toFixed(2);   // 2*pi*16
+    $('ring-pct').textContent = pct + '%';
+    var first = user && user.displayName ? esc(user.displayName.split(' ')[0]) : '';
+    $('dash-title').innerHTML = !tracking ? 'Short Practice Sprints'
+      : nDone === 0 ? (first ? 'Welcome, ' + first : 'Welcome') : nDone === TOTAL ? 'All done' + (first ? ', ' + first : '') + '!'
+      : (first ? 'Keep going, ' + first : 'Keep going');
+    var go = $('continue');
     if (!ready) {
-      text.textContent = 'Loading your progress…';
+      text.textContent = 'Loading your progress…'; go.hidden = true;
     } else if (!tracking) {
-      text.innerHTML = '<button type="button" class="link" id="signin2">Sign in with Google</button> to tick off worksheets as you finish them and plan what to do next.';
+      text.textContent = 'Sign in to save your progress.'; go.hidden = true;
     } else {
-      var who = user && user.displayName ? esc(user.displayName.split(' ')[0]) + ', you have' : 'You have';
-      var html = who + ' finished <strong>' + nDone + '</strong> of ' + TOTAL + ' worksheets.';
-      if (next) html += ' <span class="next">Next up: <a href="#' + next.id + '" data-next="' + next.id + '">' + esc(num(next)) + ' ' + esc(title(next)) + '</a></span>';
-      text.innerHTML = html;
+      text.innerHTML = '<strong>' + nDone + '</strong> of ' + TOTAL + ' worksheets done' +
+        (nDone && nDone < TOTAL ? ' · ' + (TOTAL - nDone) + ' to go' : '');
+      if (next) {
+        go.hidden = false;
+        go.setAttribute('data-next', next.id);
+        go.innerHTML = (nDone ? 'Continue' : 'Start') + ': <span>' + esc(num(next)) + ' ' + esc(title(next)) + '</span> →';
+      } else go.hidden = true;
     }
+    // module cards: how much of each module is done
+    [].forEach.call(document.querySelectorAll('.modcard'), function (c) {
+      var m = $(c.getAttribute('data-mod'));
+      var all = m ? m.querySelectorAll('.ws:not(.soon)').length : 0, d = m ? m.querySelectorAll('.ws.is-done').length : 0;
+      c.querySelector('.mc-bar i').style.width = (all ? Math.round(100 * d / all) : 0) + '%';
+      c.querySelector('.mc-count').textContent = tracking ? d + ' / ' + all + ' done' : all + ' worksheets';
+      c.classList.toggle('complete', tracking && all > 0 && d === all);
+    });
     $('progress-note').textContent = note ? note
       : !cloud ? 'Your ticks are saved in this browser on this device.'
       : user ? 'Saved to your Google account (' + (user.email || '') + '), on every device you sign in.'
@@ -785,74 +806,39 @@
     }
   });
 
-  /* ================= worksheet viewer: shows the PDF pages inside the site ================= */
-  var PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  /* ================= worksheet viewer: view-only page images (no PDF is published) ================= */
   var viewer = $('viewer'), pages = $('viewer-pages');
-  var pdfjsReady = null, job = 0, lastFocus = null, viewerId = null;
+  var lastFocus = null, viewerId = null;
 
-  function loadPdfjs() {
-    if (!pdfjsReady) {
-      pdfjsReady = new Promise(function (ok, fail) {
-        var s = document.createElement('script');
-        s.src = PDFJS + 'pdf.min.js';
-        s.integrity = 'sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==';
-        s.crossOrigin = 'anonymous';
-        s.referrerPolicy = 'no-referrer';
-        s.onload = function () {
-          window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js';
-          ok(window.pdfjsLib);
-        };
-        s.onerror = function () { pdfjsReady = null; fail(new Error('viewer library did not load')); };
-        document.head.appendChild(s);
-      });
-    }
-    return pdfjsReady;
-  }
-  function viewerNote(html) { pages.innerHTML = '<p class="viewer-note">' + html + '</p>'; }
+  function viewerNote(text) { pages.innerHTML = '<p class="viewer-note">' + esc(text) + '</p>'; }
 
   function openViewer(li) {
-    var url = li.querySelector('.open').getAttribute('href');
-    var mine = ++job;
+    var list = (li.querySelector('.open').getAttribute('data-pages') || '').split('|').filter(Boolean);
     viewerId = li.id;
     lastFocus = document.activeElement;
     $('viewer-title').textContent = num(li) + '  ' + title(li);
-    $('viewer-dl').href = url;
     viewer.hidden = false;
     document.body.classList.add('viewing');
-    viewerNote('Loading worksheet…');
     $('viewer-close').focus();
-    track('pdf-' + li.id, 'PDF: ' + title(li));
+    track('pdf-' + li.id, 'Worksheet: ' + title(li));
     render();
-
-    loadPdfjs().then(function (lib) { return lib.getDocument({ url: url, isEvalSupported: false }).promise; }).then(function (doc) {
-      if (mine !== job) return;
-      pages.innerHTML = '';
-      var width = Math.min(pages.clientWidth - 20, 900);
-      var dpr = Math.min(window.devicePixelRatio || 1, 2.5);
-      var chain = Promise.resolve();
-      for (var n = 1; n <= doc.numPages; n++) {
-        (function (n) {
-          chain = chain.then(function () { return doc.getPage(n); }).then(function (page) {
-            if (mine !== job) return;
-            var base = page.getViewport({ scale: 1 });
-            var vp = page.getViewport({ scale: (width / base.width) * dpr });
-            var c = document.createElement('canvas');
-            c.width = Math.round(vp.width); c.height = Math.round(vp.height);
-            c.setAttribute('role', 'img');
-            c.setAttribute('aria-label', 'Worksheet page ' + n + ' of ' + doc.numPages);
-            pages.appendChild(c);
-            return page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
-          });
-        })(n);
-      }
-      return chain;
-    }).catch(function () {
-      if (mine !== job) return;
-      viewerNote('The worksheet could not be shown here. <a href="' + url + '" target="_blank" rel="noopener">Open the PDF directly</a>.');
-    });
+    if (!list.length) { viewerNote('This worksheet could not be shown. Please try again later.'); return; }
+    pages.innerHTML = list.map(function (src, i) {
+      // background images (not <img>) so there is no "Save image" target or drag-out
+      return '<div class="sheet-page" role="img" aria-label="Worksheet page ' + (i + 1) + ' of ' + list.length + '"' +
+        ' style="background-image:url(\'' + src.replace(/[^\w\/.\-]/g, '') + '\')"></div>';
+    }).join('');
+    pages.scrollTop = 0;
   }
+  // view-only: no context menu, dragging, saving or printing from the viewer
+  pages.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  pages.addEventListener('dragstart', function (e) { e.preventDefault(); });
+  document.addEventListener('keydown', function (e) {
+    if (viewer.hidden) return;
+    var k = (e.key || '').toLowerCase();
+    if ((e.metaKey || e.ctrlKey) && (k === 's' || k === 'p')) e.preventDefault();
+  });
   function closeViewer() {
-    job++;
     viewerId = null;
     viewer.hidden = true;
     pages.innerHTML = '';

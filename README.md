@@ -33,4 +33,4 @@ Firebase Authentication > Settings > Authorized domains.
 
 Ember is an original character drawn for this site.
 
-(c) Ashwini Kumar Mathur. All rights reserved.
+(c) Ashwini Kumar Mathur. All rights reserved. Not open source: see [LICENSE](LICENSE).
