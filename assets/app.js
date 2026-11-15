@@ -541,6 +541,9 @@
     if (perch) perch.state = -1;
     p.querySelector('.player-foot strong').textContent = v.title;
     p.querySelector('.yt-like').setAttribute('data-vid', v.id);
+    p.querySelector('.yt-comment').setAttribute('data-vid', v.id);
+    var cp = p.querySelector('.cmt');
+    if (cp) loadComments(p);
     loadTotals(['v_' + v.id, 'channel']);
     paintReactions(p);
     [].forEach.call(p.querySelectorAll('.player-tabs button'), function (t, k) {
@@ -568,6 +571,12 @@
           '<button type="button" class="yt-sub" aria-pressed="false" title="Get updates on this site (separate from YouTube)">' +
             '<svg class="ic-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12.5l5 5L19.5 7"/></svg>' +
             '<span class="t">Subscribe</span></button>' +
+          '<button type="button" class="yt-comment" aria-expanded="false">' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-4 4v-4H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>' +
+            '<span class="t">Comment</span><span class="n"></span></button>' +
+          '<button type="button" class="yt-full" title="Watch the lecture full screen">' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+            '<span class="t">Full screen</span></button>' +
         '</span></div>';
     li.appendChild(p);
     p.addEventListener('click', function (e) {
@@ -578,6 +587,94 @@
     show(li, vids, 0);
     makePerch(li, p);
     track('video-' + li.id, 'Video: ' + title(li));
+  }
+
+  /* ================= Comments on each lecture (kept on this site) =================
+     comments/{id}: { vid, uid, name, text, at }. Signed-in students read and post;
+     authors (and the teacher) can delete. Rendered with esc() only. */
+  // Full screen: the video frame fills the screen (Esc or the player's own button exits)
+  function goFullscreen(p) {
+    var frame = p && p.querySelector('.frame'), ifr = frame && frame.querySelector('iframe');
+    var el = frame || ifr;
+    if (!el) return;
+    var req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if (req) { req.call(el); track('fullscreen', 'Video full screen'); }
+    else if (ifr && ifr.webkitEnterFullscreen) ifr.webkitEnterFullscreen();     // older iPhone Safari
+  }
+  function toggleComments(p) {
+    var btn = p.querySelector('.yt-comment'), panel = p.querySelector('.cmt');
+    if (panel) { panel.remove(); btn.setAttribute('aria-expanded', 'false'); return; }
+    if (cloud && !user) { signIn(); return; }
+    panel = document.createElement('div');
+    panel.className = 'cmt';
+    panel.innerHTML = '<form class="cmt-form"><label class="sr" for="cmt-text">Write a comment</label>' +
+      '<textarea id="cmt-text" maxlength="500" rows="2" placeholder="Ask a question or share what helped..."></textarea>' +
+      '<div class="cmt-row"><span class="cmt-count">0 / 500</span><button class="btn btn-solid cmt-post" type="submit">Post</button></div></form>' +
+      '<p class="cmt-status" role="status"></p><ol class="cmt-list" aria-live="polite"><li class="cmt-empty">Loading comments…</li></ol>';
+    p.appendChild(panel);
+    btn.setAttribute('aria-expanded', 'true');
+    var ta = panel.querySelector('textarea');
+    ta.addEventListener('input', function () { panel.querySelector('.cmt-count').textContent = ta.value.length + ' / 500'; });
+    panel.querySelector('form').addEventListener('submit', function (e) { e.preventDefault(); postComment(p); });
+    ta.focus();
+    loadComments(p);
+  }
+  function when(ts) { return ts && ts.toDate ? ts.toDate() : null; }
+  function ago(d) {
+    if (!d) return 'just now';
+    var sec = (Date.now() - d.getTime()) / 1000;
+    if (sec < 60) return 'just now';
+    if (sec < 3600) return Math.floor(sec / 60) + ' min ago';
+    if (sec < 86400) return Math.floor(sec / 3600) + ' h ago';
+    if (sec < 86400 * 30) return Math.floor(sec / 86400) + ' d ago';
+    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  function loadComments(p) {
+    var panel = p.querySelector('.cmt'), vid = p.querySelector('.yt-comment').getAttribute('data-vid');
+    if (!panel || !fb) return;
+    var F = fb.f;
+    F.getDocs(F.query(F.collection(fb.db, 'comments'), F.where('vid', '==', vid), F.limit(200))).then(function (snap) {
+      var list = [];
+      snap.forEach(function (d) { var v = d.data(); v.id = d.id; list.push(v); });
+      list.sort(function (a, b) { return (when(b.at) || new Date()) - (when(a.at) || new Date()); });
+      renderComments(p, list);
+    }).catch(function () {
+      panel.querySelector('.cmt-list').innerHTML = '<li class="cmt-empty">Comments could not be loaded right now.</li>';
+    });
+  }
+  function renderComments(p, list) {
+    var panel = p.querySelector('.cmt'); if (!panel) return;
+    p.querySelector('.yt-comment .n').textContent = list.length ? String(list.length) : '';
+    panel.querySelector('.cmt-list').innerHTML = list.length ? list.map(function (c) {
+      var mine = user && c.uid === user.uid;
+      return '<li class="cmt-item"><div class="cmt-head"><strong>' + esc(c.name || 'Student') + '</strong>' +
+        '<span class="cmt-when">' + ago(when(c.at)) + '</span>' +
+        (mine || isTeacher() ? '<button type="button" class="cmt-del" data-id="' + esc(c.id) + '">Delete</button>' : '') +
+        '</div><p class="cmt-text">' + esc(c.text) + '</p></li>';
+    }).join('') : '<li class="cmt-empty">No comments yet. Be the first to ask or share!</li>';
+  }
+  function postComment(p) {
+    var panel = p.querySelector('.cmt'), ta = panel.querySelector('textarea'), status = panel.querySelector('.cmt-status');
+    var text = ta.value.trim(), vid = p.querySelector('.yt-comment').getAttribute('data-vid');
+    if (!text) { status.textContent = 'Write something first.'; ta.focus(); return; }
+    if (!fb || !user) { signIn(); return; }
+    var btn = panel.querySelector('.cmt-post'); btn.disabled = true; status.textContent = 'Posting…';
+    fb.f.addDoc(fb.f.collection(fb.db, 'comments'), {
+      vid: vid, uid: user.uid, name: (user.displayName || '').slice(0, 120), text: text.slice(0, 500), at: fb.f.serverTimestamp()
+    }).then(function () {
+      ta.value = ''; panel.querySelector('.cmt-count').textContent = '0 / 500'; status.textContent = '';
+      if (perch) perchSay('Thanks for sharing!', 'happy', 2600);
+      track('comment', 'Comment posted');
+      loadComments(p);
+    }).catch(function () { status.textContent = 'That did not post. Please try again.'; })
+      .then(function () { btn.disabled = false; });
+  }
+  function deleteComment(btn) {
+    var p = btn.closest('.player');
+    if (!fb || !window.confirm('Delete this comment?')) return;
+    fb.f.deleteDoc(fb.f.doc(fb.db, 'comments', btn.getAttribute('data-id')))
+      .then(function () { loadComments(p); })
+      .catch(function () { p.querySelector('.cmt-status').textContent = 'Could not delete that comment.'; });
   }
 
   /* ================= Like / Subscribe: on-page reactions with a little celebration =================
@@ -777,6 +874,12 @@
       return;
     }
     if (t.closest('#pbook-open')) { location.hash = 'view-practice'; return; }
+    var fs = t.closest('.yt-full');
+    if (fs) { goFullscreen(fs.closest('.player')); return; }
+    var cb = t.closest('.yt-comment');
+    if (cb) { toggleComments(cb.closest('.player')); return; }
+    var del = t.closest('.cmt-del');
+    if (del) { deleteComment(del); return; }
     if (t.closest('.fly-btn')) { poke(); return; }
     var ow = t.closest('[data-open]');
     if (ow) { location.hash = 'view-' + ow.getAttribute('data-open'); if (perch) perch.say.hidden = true; return; }
