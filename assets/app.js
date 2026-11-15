@@ -372,12 +372,17 @@
   /* ================= rendering ================= */
   var q = $('q');
   function title(li) { return li.querySelector('h3').textContent; }
+  function openModuleOf(el) {
+    var m = el && el.closest('.module');
+    if (m && !m.open) { m.open = true; m.removeAttribute('data-auto'); }
+  }
   function num(li) { return li.querySelector('.ws-no').textContent; }
 
   function render() {
     var tracking = !cloud || (!!user && ready);
     var terms = q.value.toLowerCase().trim().split(/\s+/).filter(Boolean);
     var shown = 0, nDone = 0, next = null;
+    var narrowed = terms.length > 0 || (tracking && filter !== 'all');
 
     rows.forEach(function (li) {
       var isDone = tracking && !!done[li.id];
@@ -400,6 +405,9 @@
       var d = m.querySelectorAll('.ws.is-done').length;
       if (mine) mine.textContent = tracking && d ? ' · ' + d + ' done by you' : '';
       m.hidden = !m.querySelector('.ws:not([hidden])');
+      // while searching or filtering, open the modules that have matches; close them again afterwards
+      if (narrowed && !m.hidden && !m.open) { m.open = true; m.setAttribute('data-auto', ''); }
+      else if (!narrowed && m.hasAttribute('data-auto')) { m.open = false; m.removeAttribute('data-auto'); }
     });
     $('empty').hidden = shown !== 0;
     $('empty').textContent = filter === 'done' && !terms.length ? 'Nothing ticked off yet. Mark a worksheet done when you finish it.'
@@ -874,6 +882,8 @@
       return;
     }
     if (t.closest('#pbook-open')) { location.hash = 'view-practice'; return; }
+    var mc = t.closest('.modcard');
+    if (mc) { var mod = $(mc.getAttribute('data-mod')); if (mod) { mod.open = true; mod.removeAttribute('data-auto'); } }
     var fs = t.closest('.yt-full');
     if (fs) { goFullscreen(fs.closest('.player')); return; }
     var cb = t.closest('.yt-comment');
@@ -895,6 +905,7 @@
       if (n.classList.contains('row-next')) clearRowBuddy();
       if (filter === 'done') { filter = 'all'; render(); }
       var target = $(n.getAttribute('data-next'));
+      openModuleOf(target);
       target.scrollIntoView({ block: 'center' });
       target.classList.add('flash');
       setTimeout(function () { target.classList.remove('flash'); }, 1600);

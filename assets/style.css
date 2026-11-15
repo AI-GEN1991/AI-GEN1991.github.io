@@ -97,7 +97,15 @@ h1 { margin: 0; font-family: var(--serif); font-weight: 700; font-size: clamp(2r
 
 /* ---------- modules ---------- */
 .module { margin: 34px 0 0; scroll-margin-top: 12px; }
-.module-head { border-bottom: 2px solid var(--cardinal); padding-bottom: 8px; }
+.module-head { border-bottom: 2px solid var(--cardinal); padding: 0 40px 8px 0; position: relative; cursor: pointer; list-style: none; }
+.module-head::-webkit-details-marker { display: none; }
+.module-head:hover h2 { color: var(--cardinal); }
+.module-head:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+.module-chev { position: absolute; right: 6px; top: 50%; width: 26px; height: 26px; margin-top: -13px; border: 1.5px solid var(--line); border-radius: 50%; background: var(--surface); }
+.module-chev::before { content: ""; position: absolute; left: 8px; top: 6px; width: 7px; height: 7px; border-right: 2px solid var(--cardinal); border-bottom: 2px solid var(--cardinal); transform: rotate(45deg); transition: transform .2s ease, top .2s ease; }
+.module[open] .module-chev::before { transform: rotate(-135deg); top: 10px; }
+.module:not([open]) { margin-top: 18px; }
+@media (prefers-reduced-motion: reduce) { .module-chev::before { transition: none; } }
 .module-no { display: block; color: var(--cardinal); font-weight: 700; font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; }
 .module-head h2 { margin: 2px 0 0; font-family: var(--serif); font-size: 1.4rem; line-height: 1.25; }
 .module-head p { margin: 2px 0 0; color: var(--muted); font-size: .98rem; }
