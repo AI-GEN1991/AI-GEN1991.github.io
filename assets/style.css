@@ -645,3 +645,16 @@ body.viewing .player .frame { z-index: auto; }
 .menu-dash + .menu-out { margin-top: 8px; }
 .dash-go { display: inline-block; }
 @media (max-width: 600px) { .dash-go { display: block; width: 100%; } .modnav { scroll-padding-left: 16px; } }
+
+/* ---------- Practice Book card ---------- */
+.pbook { display: flex; align-items: center; gap: 18px; margin: 16px 0 0; padding: 14px 18px; border-radius: 10px;
+  background: linear-gradient(100deg, #fff7ec, #fff); border: 1px solid #f3d9b5; }
+.pbook-art { flex: none; }
+.pbook-text { flex: 1; min-width: 0; }
+.pbook-text h2 { margin: 0; font-family: var(--px); font-size: 1.05rem; color: var(--ink); }
+.pbook-text p { margin: 3px 0 0; color: #3b3a36; font-size: .95rem; }
+@media (max-width: 600px) {
+  .pbook { flex-wrap: wrap; gap: 10px 14px; }
+  .pbook-art .bit { width: 48px; height: 48px; }
+  .pbook .btn { width: 100%; justify-content: center; }
+}

@@ -776,6 +776,7 @@
       location.hash = 'view-' + o.closest('.ws').id;          // the hash opens the viewer (Back closes it)
       return;
     }
+    if (t.closest('#pbook-open')) { location.hash = 'view-practice'; return; }
     if (t.closest('.fly-btn')) { poke(); return; }
     var ow = t.closest('[data-open]');
     if (ow) { location.hash = 'view-' + ow.getAttribute('data-open'); if (perch) perch.say.hidden = true; return; }
@@ -814,21 +815,45 @@
 
   function openViewer(li) {
     var list = (li.querySelector('.open').getAttribute('data-pages') || '').split('|').filter(Boolean);
-    viewerId = li.id;
+    openPages(list, num(li) + '  ' + title(li), li.id);
+  }
+  function openBook() {
+    var b = $('pbook-open');
+    openPages((b && b.getAttribute('data-pages') || '').split('|').filter(Boolean), 'Practice Book: all practice sets, module by module', null);
+  }
+  function openPages(list, heading, id) {
+    viewerId = id;
     lastFocus = document.activeElement;
-    $('viewer-title').textContent = num(li) + '  ' + title(li);
+    $('viewer-title').textContent = heading;
+    $('viewer-done').hidden = !id;                       // the book has no single "done" tick
     viewer.hidden = false;
     document.body.classList.add('viewing');
     $('viewer-close').focus();
-    track('pdf-' + li.id, 'Worksheet: ' + title(li));
+    track(id ? 'pdf-' + id : 'practice-book', heading);
     render();
-    if (!list.length) { viewerNote('This worksheet could not be shown. Please try again later.'); return; }
+    if (!list.length) { viewerNote('This could not be shown. Please try again later.'); return; }
     pages.innerHTML = list.map(function (src, i) {
       // background images (not <img>) so there is no "Save image" target or drag-out
-      return '<div class="sheet-page" role="img" aria-label="Worksheet page ' + (i + 1) + ' of ' + list.length + '"' +
-        ' style="background-image:url(\'' + src.replace(/[^\w\/.\-]/g, '') + '\')"></div>';
+      return '<div class="sheet-page" role="img" aria-label="Page ' + (i + 1) + ' of ' + list.length + '"' +
+        (i > 3 ? ' data-src="' + src.replace(/[^\w\/.\-]/g, '') + '"' : ' style="background-image:url(\'' + src.replace(/[^\w\/.\-]/g, '') + '\')"') + '></div>';
     }).join('');
     pages.scrollTop = 0;
+    lazyPages();
+  }
+  // long documents: load page images as they scroll into view
+  var pageObs = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (!en.isIntersecting) return;
+      var el = en.target, src = el.getAttribute('data-src');
+      if (src) { el.style.backgroundImage = "url('" + src + "')"; el.removeAttribute('data-src'); }
+      pageObs.unobserve(el);
+    });
+  }, { root: null, rootMargin: '800px 0px' }) : null;
+  function lazyPages() {
+    [].forEach.call(pages.querySelectorAll('.sheet-page[data-src]'), function (el) {
+      if (pageObs) pageObs.observe(el);
+      else { el.style.backgroundImage = "url('" + el.getAttribute('data-src') + "')"; el.removeAttribute('data-src'); }
+    });
   }
   // view-only: no context menu, dragging, saving or printing from the viewer
   pages.addEventListener('contextmenu', function (e) { e.preventDefault(); });
@@ -847,6 +872,7 @@
     render();
   }
   function route() {
+    if (location.hash === '#view-practice') { openBook(); return; }
     var m = /^#view-(a\d+)$/.exec(location.hash);
     var li = m && $(m[1]);
     if (li && li.querySelector('.open')) openViewer(li); else if (!viewer.hidden) closeViewer();
